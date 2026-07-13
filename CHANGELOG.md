@@ -14,3 +14,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added the initial Android application foundation
 - Added the initial Compose placeholder screen
 - Added baseline build and test configuration
+- Refined the Home screen for the early-development app state
+- Added temporary scan action feedback while scanning is not yet implemented
+- Added an in-app privacy information dialog

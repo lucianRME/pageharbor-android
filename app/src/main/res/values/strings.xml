@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">PageHarbor</string>
-    <string name="home_supporting_text">Private document scanning, built around your device.</string>
-    <string name="home_scan_document">Scan document</string>
     <string name="home_status">Early development</string>
+    <string name="home_headline">Scan documents without giving them away.</string>
+    <string name="home_supporting_text">PageHarbor is designed to process documents on your device, without accounts, ads, or tracking.</string>
+    <string name="home_scan_document">Scan document</string>
+    <string name="home_scan_coming_next">Document scanning is coming next.</string>
+    <string name="home_privacy_action">How privacy works</string>
+    <string name="home_footer">No account · No ads · No tracking</string>
+    <string name="home_privacy_dialog_title">How privacy works</string>
+    <string name="home_privacy_dialog_local_processing">Documents are intended to be processed locally.</string>
+    <string name="home_privacy_dialog_no_cloud">PageHarbor does not operate cloud storage.</string>
+    <string name="home_privacy_dialog_user_choice">Users will choose where exported files are saved or shared.</string>
+    <string name="home_privacy_dialog_no_tracking">No analytics, advertising, or tracking are used.</string>
+    <string name="home_privacy_dialog_dismiss">OK</string>
 </resources>
