@@ -17,3 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Refined the Home screen for the early-development app state
 - Added temporary scan action feedback while scanning is not yet implemented
 - Added an in-app privacy information dialog
+- Documented the MVP product flow
+- Defined initial architecture boundaries
+- Documented privacy and data lifecycle boundaries
+- Added initial architecture decision records

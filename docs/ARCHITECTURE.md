@@ -1,0 +1,92 @@
+# Architecture
+
+PageHarbor should use a minimal architecture for the MVP. The goal is clear ownership of UI, document handling, platform integrations, and cleanup without adding framework ceremony before the scanner and export behavior are validated.
+
+This document is guidance for future implementation. It does not introduce source code or require specific class names.
+
+## UI Layer
+
+Responsibilities:
+
+- Compose screens.
+- Displaying state.
+- Triggering user actions.
+- Showing loading, errors, cancellation, and completion feedback.
+
+Possible screens:
+
+- Home.
+- Scan result review.
+- Export result or completion state.
+
+Static screens should not receive ViewModels by default. A coordinator or ViewModel should be introduced only when a screen has meaningful state, asynchronous work, or platform result handling that would otherwise make the composable difficult to test or maintain.
+
+## Application Coordination
+
+The scan flow may eventually need one small coordinator or ViewModel responsible for:
+
+- Launching the scanner.
+- Interpreting scanner results.
+- Holding temporary scan-session state.
+- Starting PDF preparation.
+- Coordinating save and share actions.
+- Surfacing errors to the UI.
+
+Keep this coordination local to the scan flow. Avoid global mutable state, service locators, and broad application-level managers unless a concrete need appears.
+
+## Platform Integrations
+
+Future platform integrations should have narrow responsibilities:
+
+- Document scanner adapter: launches the selected scanner and converts scanner-specific results into PageHarbor concepts.
+- PDF generator: prepares a PDF locally from scanned page data.
+- Temporary file manager: owns temporary file creation, lifetime, and cleanup.
+- File export writer: writes a prepared document to the user-selected destination.
+- Android share launcher: starts the system share sheet for a prepared or saved PDF.
+
+Platform APIs and third-party APIs should be isolated behind small components only when isolation improves testability or keeps Android-specific code out of UI code. Do not require an interface for every class.
+
+## Suggested Data Concepts
+
+- ScanSession: represents an active scan workflow and the temporary resources associated with it.
+- ScannedPage: represents one captured page returned by the scanner in a form PageHarbor can review or export.
+- PreparedDocument: represents a locally prepared export, such as a generated PDF awaiting save or share.
+- ExportResult: records whether a save or share preparation completed, was cancelled, or failed.
+- ScanError: describes scanner startup, cancellation, availability, or result errors without document content.
+- ExportError: describes PDF generation or file writing failures without file paths or document content.
+
+These are concepts only. Avoid detailed schemas until the scanner API and PDF implementation are validated.
+
+## Possible State Model
+
+A scan flow may use a state model similar to:
+
+- Idle.
+- LaunchingScanner.
+- Reviewing.
+- PreparingPdf.
+- AwaitingSaveDestination.
+- Saving.
+- Completed.
+- Cancelled.
+- Error.
+
+Implementation may simplify this model where appropriate. For example, cancellation may return directly to Idle if no user-visible cancelled state is useful.
+
+## Dependency Direction
+
+- Compose UI should not directly perform file I/O.
+- Document content should not be stored in long-lived global state.
+- Scanner-specific result types should not leak throughout the application.
+- PDF and file-export logic should remain independent of screen rendering.
+- Android Context should be passed only where platform APIs require it.
+- Avoid service locators and global mutable singletons.
+- Avoid Clean Architecture ceremony that does not provide practical value.
+
+## Testing Strategy
+
+- Use Compose UI tests for visible states and user actions.
+- Use unit tests for state transitions and error handling.
+- Use integration tests for temporary files and PDF generation where practical.
+- Use instrumentation tests for Storage Access Framework and scanner integration where possible.
+- Manually validate scanner, save, share, cancellation, and cleanup behavior on at least one physical device before release.
