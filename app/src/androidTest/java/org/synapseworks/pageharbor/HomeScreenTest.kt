@@ -3,12 +3,15 @@ package org.synapseworks.pageharbor
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
+import org.synapseworks.pageharbor.scanner.ScannerSpikeState
 import org.synapseworks.pageharbor.ui.PageHarborApp
 
 class HomeScreenTest {
@@ -36,14 +39,91 @@ class HomeScreenTest {
     }
 
     @Test
-    fun clickingScanDocumentShowsComingNextSnackbar() {
+    fun clickingScanDocumentInvokesCallback() {
+        var scanClickCount = 0
+
         composeTestRule.setContent {
-            PageHarborApp()
+            PageHarborApp(
+                onScanDocument = {
+                    scanClickCount += 1
+                },
+            )
         }
 
         composeTestRule.onNodeWithText("Scan document").performClick()
 
-        composeTestRule.onNodeWithText("Document scanning is coming next.")
+        assertEquals(1, scanClickCount)
+    }
+
+    @Test
+    fun preparingStateDisablesScanActionAndShowsProgress() {
+        composeTestRule.setContent {
+            PageHarborApp(scannerSpikeState = ScannerSpikeState.Preparing)
+        }
+
+        composeTestRule.onNodeWithText("Scan document")
+            .assertIsDisplayed()
+            .assertIsNotEnabled()
+        composeTestRule.onNodeWithText("Preparing scanner…")
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun successfulSummaryDisplaysPageCountAndPdfAvailability() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = ScannerSpikeState.ResultSummary(
+                    jpegPageCount = 3,
+                    hasPdf = true,
+                    pdfPageCount = 3,
+                ),
+            )
+        }
+
+        composeTestRule.onNodeWithText("JPEG pages: 3").assertIsDisplayed()
+        composeTestRule.onNodeWithText("PDF result: returned").assertIsDisplayed()
+        composeTestRule.onNodeWithText("PDF pages: 3").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Scanner result was received locally.").assertIsDisplayed()
+    }
+
+    @Test
+    fun clearScanResultInvokesCallback() {
+        var clearClickCount = 0
+
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = ScannerSpikeState.ResultSummary(
+                    jpegPageCount = 1,
+                    hasPdf = false,
+                    pdfPageCount = null,
+                ),
+                onClearScanResult = {
+                    clearClickCount += 1
+                },
+            )
+        }
+
+        composeTestRule.onNodeWithText("Clear scan result").performClick()
+
+        assertEquals(1, clearClickCount)
+    }
+
+    @Test
+    fun cancellationFeedbackIsDisplayed() {
+        composeTestRule.setContent {
+            PageHarborApp(scannerSpikeState = ScannerSpikeState.Cancelled)
+        }
+
+        composeTestRule.onNodeWithText("Scan cancelled.").assertIsDisplayed()
+    }
+
+    @Test
+    fun errorFeedbackIsDisplayed() {
+        composeTestRule.setContent {
+            PageHarborApp(scannerSpikeState = ScannerSpikeState.Error)
+        }
+
+        composeTestRule.onNodeWithText("Document scanner could not be opened.")
             .assertIsDisplayed()
     }
 

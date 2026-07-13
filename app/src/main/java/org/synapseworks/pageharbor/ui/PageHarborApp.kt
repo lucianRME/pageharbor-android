@@ -2,32 +2,35 @@ package org.synapseworks.pageharbor.ui
 
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
-import kotlinx.coroutines.launch
 import org.synapseworks.pageharbor.R
+import org.synapseworks.pageharbor.scanner.ScannerSpikeState
 import org.synapseworks.pageharbor.ui.home.HomeScreen
 import org.synapseworks.pageharbor.ui.theme.PageHarborTheme
 
 @Composable
-fun PageHarborApp() {
+fun PageHarborApp(
+    scannerSpikeState: ScannerSpikeState = ScannerSpikeState.Idle,
+    onScanDocument: () -> Unit = {},
+    onClearScanResult: () -> Unit = {},
+) {
     PageHarborTheme {
         val snackbarHostState = remember { SnackbarHostState() }
-        val coroutineScope = rememberCoroutineScope()
         var showPrivacyInfo by remember { mutableStateOf(false) }
-        val scanComingNextMessage = stringResource(R.string.home_scan_coming_next)
+        val scanCancelledMessage = stringResource(R.string.home_scan_cancelled)
+        val scannerErrorMessage = stringResource(R.string.home_scanner_error)
 
         HomeScreen(
             snackbarHostState = snackbarHostState,
+            scannerSpikeState = scannerSpikeState,
             showPrivacyInfo = showPrivacyInfo,
             onScanDocument = {
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar(scanComingNextMessage)
-                }
+                onScanDocument()
             },
             onPrivacyInfo = {
                 showPrivacyInfo = true
@@ -35,6 +38,24 @@ fun PageHarborApp() {
             onDismissPrivacyInfo = {
                 showPrivacyInfo = false
             },
+            onClearScanResult = onClearScanResult,
         )
+
+        LaunchedEffect(scannerSpikeState) {
+            when (scannerSpikeState) {
+                ScannerSpikeState.Cancelled -> {
+                    snackbarHostState.showSnackbar(scanCancelledMessage)
+                }
+
+                ScannerSpikeState.Error -> {
+                    snackbarHostState.showSnackbar(scannerErrorMessage)
+                }
+
+                ScannerSpikeState.Idle,
+                ScannerSpikeState.Preparing,
+                is ScannerSpikeState.ResultSummary,
+                -> Unit
+            }
+        }
     }
 }

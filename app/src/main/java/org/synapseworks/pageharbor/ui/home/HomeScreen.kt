@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -25,14 +26,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.synapseworks.pageharbor.R
+import org.synapseworks.pageharbor.scanner.ScannerSpikeState
 
 @Composable
 fun HomeScreen(
     snackbarHostState: SnackbarHostState,
+    scannerSpikeState: ScannerSpikeState,
     showPrivacyInfo: Boolean,
     onScanDocument: () -> Unit,
     onPrivacyInfo: () -> Unit,
     onDismissPrivacyInfo: () -> Unit,
+    onClearScanResult: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -88,9 +92,34 @@ fun HomeScreen(
                     )
                     Button(
                         modifier = Modifier.padding(top = 40.dp),
+                        enabled = scannerSpikeState != ScannerSpikeState.Preparing,
                         onClick = onScanDocument,
                     ) {
                         Text(text = stringResource(R.string.home_scan_document))
+                    }
+                    when (scannerSpikeState) {
+                        ScannerSpikeState.Preparing -> {
+                            Text(
+                                modifier = Modifier.padding(top = 16.dp),
+                                text = stringResource(R.string.home_scan_preparing),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+
+                        is ScannerSpikeState.ResultSummary -> {
+                            ScanResultSummary(
+                                modifier = Modifier.padding(top = 24.dp),
+                                resultSummary = scannerSpikeState,
+                                onClearScanResult = onClearScanResult,
+                            )
+                        }
+
+                        ScannerSpikeState.Idle,
+                        ScannerSpikeState.Cancelled,
+                        ScannerSpikeState.Error,
+                        -> Unit
                     }
                     TextButton(
                         modifier = Modifier.padding(top = 8.dp),
@@ -112,6 +141,65 @@ fun HomeScreen(
 
     if (showPrivacyInfo) {
         PrivacyInfoDialog(onDismiss = onDismissPrivacyInfo)
+    }
+}
+
+@Composable
+private fun ScanResultSummary(
+    resultSummary: ScannerSpikeState.ResultSummary,
+    onClearScanResult: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.home_scan_result_title),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            text = stringResource(
+                R.string.home_scan_result_jpeg_pages,
+                resultSummary.jpegPageCount,
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            text = if (resultSummary.hasPdf) {
+                stringResource(R.string.home_scan_result_pdf_returned)
+            } else {
+                stringResource(R.string.home_scan_result_pdf_not_returned)
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
+        )
+        resultSummary.pdfPageCount?.let { pdfPageCount ->
+            Text(
+                text = stringResource(R.string.home_scan_result_pdf_pages, pdfPageCount),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center,
+            )
+        }
+        Text(
+            text = stringResource(R.string.home_scan_result_local_statement),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
+        )
+        OutlinedButton(
+            modifier = Modifier.padding(top = 8.dp),
+            onClick = onClearScanResult,
+        ) {
+            Text(text = stringResource(R.string.home_clear_scan_result))
+        }
     }
 }
 

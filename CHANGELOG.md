@@ -21,3 +21,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Defined initial architecture boundaries
 - Documented privacy and data lifecycle boundaries
 - Added initial architecture decision records
+- Added a clearly labelled ML Kit Document Scanner technical spike
