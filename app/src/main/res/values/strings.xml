@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PageHarbor</string>
+    <string name="home_supporting_text">Private document scanning, built around your device.</string>
+    <string name="home_scan_document">Scan document</string>
+    <string name="home_status">Early development</string>
+</resources>

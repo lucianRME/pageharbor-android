@@ -11,3 +11,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Initial repository setup
 - Added project documentation
 - Defined privacy and MVP principles
+- Added the initial Android application foundation
+- Added the initial Compose placeholder screen
+- Added baseline build and test configuration

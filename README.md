@@ -1,6 +1,6 @@
 # PageHarbor
 
-PageHarbor is an open-source, privacy-first Android document scanner. The project is in early development; the features described below are planned and are not yet claimed to be implemented.
+PageHarbor is an open-source, privacy-first Android document scanner. The project is in early development. The Android project foundation exists, but document-scanning features are planned and are not yet claimed to be implemented.
 
 ## Core commitments
 
@@ -28,6 +28,14 @@ PageHarbor is an open-source, privacy-first Android document scanner. The projec
 - Android Storage Access Framework
 
 PageHarbor is intended to process documents locally on the device and let users choose where files are saved or shared. Cloud providers such as Google Drive or OneDrive may appear as destinations through the Android system file picker. PageHarbor does not operate proprietary cloud storage or directly access those services.
+
+## Local development
+
+```sh
+./gradlew assembleDebug
+./gradlew test
+./gradlew lint
+```
 
 ## License
 
