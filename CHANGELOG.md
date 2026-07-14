@@ -22,3 +22,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Documented privacy and data lifecycle boundaries
 - Added initial architecture decision records
 - Added a clearly labelled ML Kit Document Scanner technical spike
+- Added the initial branding guide
+- Added the initial PageHarbor visual identity
+- Added adaptive and monochrome launcher icon resources
+- Added branded light and dark themes
+- Added Android system splash configuration
+- Added initial GitHub and Play Store visual assets

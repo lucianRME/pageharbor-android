@@ -32,6 +32,7 @@ import org.synapseworks.pageharbor.scanner.ScannerSpikeState
 fun HomeScreen(
     snackbarHostState: SnackbarHostState,
     scannerSpikeState: ScannerSpikeState,
+    showDevelopmentStatus: Boolean,
     showPrivacyInfo: Boolean,
     onScanDocument: () -> Unit,
     onPrivacyInfo: () -> Unit,
@@ -69,13 +70,15 @@ fun HomeScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                         textAlign = TextAlign.Center,
                     )
-                    Text(
-                        modifier = Modifier.padding(top = 8.dp),
-                        text = stringResource(R.string.home_status),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        textAlign = TextAlign.Center,
-                    )
+                    if (showDevelopmentStatus) {
+                        Text(
+                            modifier = Modifier.padding(top = 8.dp),
+                            text = stringResource(R.string.home_status),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                     Text(
                         modifier = Modifier.padding(top = 32.dp),
                         text = stringResource(R.string.home_headline),

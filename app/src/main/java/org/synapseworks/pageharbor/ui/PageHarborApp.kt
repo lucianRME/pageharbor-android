@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
+import org.synapseworks.pageharbor.BuildConfig
 import org.synapseworks.pageharbor.R
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
 import org.synapseworks.pageharbor.ui.home.HomeScreen
@@ -28,6 +29,7 @@ fun PageHarborApp(
         HomeScreen(
             snackbarHostState = snackbarHostState,
             scannerSpikeState = scannerSpikeState,
+            showDevelopmentStatus = BuildConfig.DEBUG,
             showPrivacyInfo = showPrivacyInfo,
             onScanDocument = {
                 onScanDocument()

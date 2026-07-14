@@ -2,9 +2,14 @@ package org.synapseworks.pageharbor.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val PageHarborLightPrimary = Color(0xFF245B73)
-val PageHarborLightSecondary = Color(0xFF4F6169)
-val PageHarborLightTertiary = Color(0xFF5D5B7D)
-val PageHarborDarkPrimary = Color(0xFF91CEE9)
-val PageHarborDarkSecondary = Color(0xFFB7C9D1)
-val PageHarborDarkTertiary = Color(0xFFC6C3EA)
+val PageHarborPrimaryBlue = Color(0xFF245FC7)
+val PageHarborPrimaryDark = Color(0xFF173E85)
+val PageHarborAccentBlue = Color(0xFF8CB9F1)
+val PageHarborDarkSlate = Color(0xFF172033)
+val PageHarborLightSurface = Color(0xFFF8FAFD)
+val PageHarborWhite = Color(0xFFFFFFFF)
+val PageHarborError = Color(0xFFB3261E)
+val PageHarborDarkBackground = Color(0xFF101827)
+val PageHarborDarkSurface = Color(0xFF172033)
+val PageHarborDarkOnSurface = Color(0xFFE6ECF5)
+val PageHarborDarkError = Color(0xFFF2B8B5)

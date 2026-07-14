@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">PageHarbor brand mark</title>
+  <desc id="desc">A simple document with a folded corner resting in a soft harbor curve.</desc>
+  <rect width="256" height="256" rx="48" fill="#F8FAFD"/>
+  <path d="M54 174C78 150 178 150 202 174C182 196 74 196 54 174Z" fill="#8CB9F1"/>
+  <path d="M78 46H154L184 76V168H78Z" fill="#245FC7"/>
+  <path d="M154 46V76H184Z" fill="#F8FAFD"/>
+  <path d="M100 104H160V116H100ZM100 130H148V142H100Z" fill="#F8FAFD"/>
+</svg>
