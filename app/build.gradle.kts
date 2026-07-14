@@ -4,6 +4,25 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+fun runGitCommand(vararg args: String): String? {
+    if (!rootProject.layout.projectDirectory.file(".git").asFile.exists()) return null
+
+    return runCatching {
+        val process = ProcessBuilder("git", *args)
+            .directory(rootProject.layout.projectDirectory.asFile)
+            .redirectError(ProcessBuilder.Redirect.DISCARD)
+            .start()
+        val output = process.inputStream.bufferedReader().use { it.readText().trim() }
+        if (process.waitFor() == 0 && output.isNotBlank()) output else null
+    }.getOrNull()
+}
+
+fun gitRevisionForDebugBuild(): String {
+    val revision = runGitCommand("rev-parse", "--short=7", "HEAD") ?: return "unknown"
+    val hasChanges = runGitCommand("status", "--porcelain").orEmpty().isNotBlank()
+    return if (hasChanges) "$revision-dirty" else revision
+}
+
 android {
     namespace = "org.synapseworks.pageharbor"
     compileSdk = 36
@@ -16,9 +35,14 @@ android {
         versionName = "0.1.0-dev"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "GIT_REVISION", "\"unknown\"")
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "GIT_REVISION", "\"${gitRevisionForDebugBuild()}\"")
+        }
+
         release {
             isMinifyEnabled = false
             proguardFiles(

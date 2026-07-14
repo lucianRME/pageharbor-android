@@ -1,6 +1,9 @@
 package org.synapseworks.pageharbor
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -53,6 +56,7 @@ class MainActivity : ComponentActivity() {
             PageHarborApp(
                 scannerSpikeState = scannerSpikeState,
                 onScanDocument = ::launchDocumentScanner,
+                onViewSourceCode = ::openSourceCode,
                 onClearScanResult = {
                     scannerSpikeState = ScannerSpikeState.Idle
                 },
@@ -85,5 +89,18 @@ class MainActivity : ComponentActivity() {
             .addOnFailureListener {
                 scannerSpikeState = ScannerSpikeState.Error
             }
+    }
+
+    private fun openSourceCode() {
+        val sourceIntent = Intent(
+            Intent.ACTION_VIEW,
+            Uri.parse(getString(R.string.source_code_url)),
+        )
+
+        try {
+            startActivity(sourceIntent)
+        } catch (_: ActivityNotFoundException) {
+            // No browser is available. Keep the app stable and avoid logging local state.
+        }
     }
 }

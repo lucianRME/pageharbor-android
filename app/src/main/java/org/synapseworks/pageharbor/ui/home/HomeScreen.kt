@@ -33,10 +33,17 @@ fun HomeScreen(
     snackbarHostState: SnackbarHostState,
     scannerSpikeState: ScannerSpikeState,
     showDevelopmentStatus: Boolean,
+    versionName: String,
+    versionCode: Int,
+    gitRevision: String,
     showPrivacyInfo: Boolean,
+    showAbout: Boolean,
     onScanDocument: () -> Unit,
     onPrivacyInfo: () -> Unit,
     onDismissPrivacyInfo: () -> Unit,
+    onAbout: () -> Unit,
+    onDismissAbout: () -> Unit,
+    onViewSourceCode: () -> Unit,
     onClearScanResult: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -130,6 +137,11 @@ fun HomeScreen(
                     ) {
                         Text(text = stringResource(R.string.home_privacy_action))
                     }
+                    TextButton(
+                        onClick = onAbout,
+                    ) {
+                        Text(text = stringResource(R.string.home_about_action))
+                    }
                     Text(
                         modifier = Modifier.padding(top = 32.dp),
                         text = stringResource(R.string.home_footer),
@@ -137,6 +149,20 @@ fun HomeScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                         textAlign = TextAlign.Center,
                     )
+                    if (showDevelopmentStatus) {
+                        Text(
+                            modifier = Modifier.padding(top = 16.dp),
+                            text = stringResource(
+                                R.string.home_debug_build_label,
+                                versionName,
+                                versionCode,
+                                gitRevision,
+                            ),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                 }
             }
         }
@@ -144,6 +170,17 @@ fun HomeScreen(
 
     if (showPrivacyInfo) {
         PrivacyInfoDialog(onDismiss = onDismissPrivacyInfo)
+    }
+
+    if (showAbout) {
+        AboutDialog(
+            showDebugBuildInfo = showDevelopmentStatus,
+            versionName = versionName,
+            versionCode = versionCode,
+            gitRevision = gitRevision,
+            onViewSourceCode = onViewSourceCode,
+            onDismiss = onDismissAbout,
+        )
     }
 }
 
@@ -226,5 +263,45 @@ private fun PrivacyInfoDialog(onDismiss: () -> Unit) {
                 Text(text = stringResource(R.string.home_privacy_dialog_dismiss))
             }
         }
+    )
+}
+
+@Composable
+private fun AboutDialog(
+    showDebugBuildInfo: Boolean,
+    versionName: String,
+    versionCode: Int,
+    gitRevision: String,
+    onViewSourceCode: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = stringResource(R.string.about_title))
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(text = stringResource(R.string.about_tagline))
+                Text(text = stringResource(R.string.about_version, versionName))
+                Text(text = stringResource(R.string.about_build_number, versionCode))
+                if (showDebugBuildInfo) {
+                    Text(text = stringResource(R.string.about_git_revision, gitRevision))
+                }
+                Text(text = stringResource(R.string.about_developed_by))
+                Text(text = stringResource(R.string.about_published_under))
+                Text(text = stringResource(R.string.about_license))
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.about_close))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onViewSourceCode) {
+                Text(text = stringResource(R.string.about_view_source))
+            }
+        },
     )
 }

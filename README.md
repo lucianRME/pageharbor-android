@@ -2,6 +2,12 @@
 
 PageHarbor is an open-source, privacy-first Android document scanner. The project is in early development. The Android project foundation exists, but document-scanning features are planned and are not yet claimed to be implemented.
 
+## Current status
+
+The Android Compose foundation, privacy documentation, architecture boundaries, and initial branding system are in place. ML Kit Document Scanner integration is under technical validation, but scanning and export are not production-ready.
+
+See [ROADMAP.md](ROADMAP.md) for the current project roadmap.
+
 ## Core commitments
 
 - Offline-first document processing
