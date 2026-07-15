@@ -12,6 +12,8 @@ import org.synapseworks.pageharbor.BuildConfig
 import org.synapseworks.pageharbor.R
 import org.synapseworks.pageharbor.document.PdfExportResult
 import org.synapseworks.pageharbor.document.PdfSaveState
+import org.synapseworks.pageharbor.document.PdfShareError
+import org.synapseworks.pageharbor.document.PdfShareState
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
 import org.synapseworks.pageharbor.ui.home.HomeScreen
 import org.synapseworks.pageharbor.ui.theme.PageHarborTheme
@@ -20,8 +22,10 @@ import org.synapseworks.pageharbor.ui.theme.PageHarborTheme
 fun PageHarborApp(
     scannerSpikeState: ScannerSpikeState = ScannerSpikeState.Idle,
     pdfSaveState: PdfSaveState = PdfSaveState.Idle,
+    pdfShareState: PdfShareState = PdfShareState.Idle,
     onScanDocument: () -> Unit = {},
     onSavePdf: () -> Unit = {},
+    onSharePdf: () -> Unit = {},
     onViewSourceCode: () -> Unit = {},
     onClearScanResult: () -> Unit = {},
 ) {
@@ -34,11 +38,16 @@ fun PageHarborApp(
         val pdfSourceMissingMessage = stringResource(R.string.pdf_save_source_missing)
         val pdfDestinationUnavailableMessage = stringResource(R.string.pdf_save_destination_unavailable)
         val pdfWriteFailedMessage = stringResource(R.string.pdf_save_failed)
+        val pdfShareNoPdfMessage = stringResource(R.string.pdf_share_no_pdf)
+        val pdfShareTargetUnavailableMessage = stringResource(R.string.pdf_share_target_unavailable)
+        val pdfShareInvalidUriMessage = stringResource(R.string.pdf_share_invalid_uri)
+        val pdfShareFailedMessage = stringResource(R.string.pdf_share_failed)
 
         HomeScreen(
             snackbarHostState = snackbarHostState,
             scannerSpikeState = scannerSpikeState,
             pdfSaveState = pdfSaveState,
+            pdfShareState = pdfShareState,
             showDevelopmentStatus = BuildConfig.DEBUG,
             versionName = BuildConfig.VERSION_NAME,
             versionCode = BuildConfig.VERSION_CODE,
@@ -49,6 +58,7 @@ fun PageHarborApp(
                 onScanDocument()
             },
             onSavePdf = onSavePdf,
+            onSharePdf = onSharePdf,
             onPrivacyInfo = {
                 showPrivacyInfo = true
             },
@@ -95,6 +105,25 @@ fun PageHarborApp(
                 PdfSaveState.ChoosingDestination,
                 PdfSaveState.Saving,
                 PdfSaveState.Saved,
+                -> null
+            }
+
+            if (message != null) {
+                snackbarHostState.showSnackbar(message)
+            }
+        }
+
+        LaunchedEffect(pdfShareState) {
+            val message = when (pdfShareState) {
+                is PdfShareState.Error -> when (pdfShareState.result) {
+                    PdfShareError.NoPdfAvailable -> pdfShareNoPdfMessage
+                    PdfShareError.ShareTargetUnavailable -> pdfShareTargetUnavailableMessage
+                    PdfShareError.InvalidUri -> pdfShareInvalidUriMessage
+                    PdfShareError.UnexpectedFailure -> pdfShareFailedMessage
+                }
+
+                PdfShareState.Idle,
+                PdfShareState.Preparing,
                 -> null
             }
 

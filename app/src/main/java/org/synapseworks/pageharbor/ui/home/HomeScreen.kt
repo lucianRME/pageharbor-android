@@ -3,9 +3,11 @@ package org.synapseworks.pageharbor.ui.home
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -28,6 +30,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.synapseworks.pageharbor.R
 import org.synapseworks.pageharbor.document.PdfSaveState
+import org.synapseworks.pageharbor.document.PdfShareState
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
 
 @Composable
@@ -35,6 +38,7 @@ fun HomeScreen(
     snackbarHostState: SnackbarHostState,
     scannerSpikeState: ScannerSpikeState,
     pdfSaveState: PdfSaveState,
+    pdfShareState: PdfShareState,
     showDevelopmentStatus: Boolean,
     versionName: String,
     versionCode: Int,
@@ -43,6 +47,7 @@ fun HomeScreen(
     showAbout: Boolean,
     onScanDocument: () -> Unit,
     onSavePdf: () -> Unit,
+    onSharePdf: () -> Unit,
     onPrivacyInfo: () -> Unit,
     onDismissPrivacyInfo: () -> Unit,
     onAbout: () -> Unit,
@@ -127,7 +132,9 @@ fun HomeScreen(
                                 modifier = Modifier.padding(top = 24.dp),
                                 resultSummary = scannerSpikeState,
                                 pdfSaveState = pdfSaveState,
+                                pdfShareState = pdfShareState,
                                 onSavePdf = onSavePdf,
+                                onSharePdf = onSharePdf,
                                 onClearScanResult = onClearScanResult,
                             )
                         }
@@ -194,12 +201,15 @@ fun HomeScreen(
 private fun ScanResultSummary(
     resultSummary: ScannerSpikeState.ResultSummary,
     pdfSaveState: PdfSaveState,
+    pdfShareState: PdfShareState,
     onSavePdf: () -> Unit,
+    onSharePdf: () -> Unit,
     onClearScanResult: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val saveInProgress = pdfSaveState == PdfSaveState.ChoosingDestination ||
         pdfSaveState == PdfSaveState.Saving
+    val shareInProgress = pdfShareState == PdfShareState.Preparing
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -253,17 +263,40 @@ private fun ScanResultSummary(
             ) {
                 Text(text = stringResource(R.string.pdf_save_action))
             }
+            OutlinedButton(
+                enabled = !shareInProgress,
+                onClick = onSharePdf,
+            ) {
+                Text(text = stringResource(R.string.pdf_share_action))
+            }
         }
         if (saveInProgress) {
-            CircularProgressIndicator(
+            Row(
                 modifier = Modifier.padding(top = 8.dp),
-            )
-            Text(
-                text = stringResource(R.string.pdf_save_progress),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center,
-            )
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                Text(
+                    text = stringResource(R.string.pdf_save_progress),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+            }
+        }
+        if (shareInProgress) {
+            Row(
+                modifier = Modifier.padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                Text(
+                    text = stringResource(R.string.pdf_share_progress),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+            }
         }
         if (pdfSaveState == PdfSaveState.Saved) {
             Text(

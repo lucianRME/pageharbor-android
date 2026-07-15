@@ -24,7 +24,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.synapseworks.pageharbor.document.PdfExportResult
 import org.synapseworks.pageharbor.document.PdfSaveState
+import org.synapseworks.pageharbor.document.PdfShareError
+import org.synapseworks.pageharbor.document.PdfShareIntentResult
+import org.synapseworks.pageharbor.document.PdfShareState
 import org.synapseworks.pageharbor.document.copyPdfToDestination
+import org.synapseworks.pageharbor.document.createPdfShareIntent
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
 import org.synapseworks.pageharbor.scanner.createScannerResultSummary
 import org.synapseworks.pageharbor.ui.PageHarborApp
@@ -32,6 +36,7 @@ import org.synapseworks.pageharbor.ui.PageHarborApp
 class MainActivity : ComponentActivity() {
     private var scannerSpikeState: ScannerSpikeState by mutableStateOf(ScannerSpikeState.Idle)
     private var pdfSaveState: PdfSaveState by mutableStateOf(PdfSaveState.Idle)
+    private var pdfShareState: PdfShareState by mutableStateOf(PdfShareState.Idle)
     private var scannedPdfUri: Uri? = null
 
     private val scanLauncher = registerForActivityResult(
@@ -39,6 +44,7 @@ class MainActivity : ComponentActivity() {
     ) { result ->
         scannedPdfUri = null
         pdfSaveState = PdfSaveState.Idle
+        pdfShareState = PdfShareState.Idle
 
         if (result.resultCode == Activity.RESULT_CANCELED) {
             scannerSpikeState = ScannerSpikeState.Cancelled
@@ -83,12 +89,15 @@ class MainActivity : ComponentActivity() {
             PageHarborApp(
                 scannerSpikeState = scannerSpikeState,
                 pdfSaveState = pdfSaveState,
+                pdfShareState = pdfShareState,
                 onScanDocument = ::launchDocumentScanner,
                 onSavePdf = ::choosePdfDestination,
+                onSharePdf = ::sharePdf,
                 onViewSourceCode = ::openSourceCode,
                 onClearScanResult = {
                     scannedPdfUri = null
                     pdfSaveState = PdfSaveState.Idle
+                    pdfShareState = PdfShareState.Idle
                     scannerSpikeState = ScannerSpikeState.Idle
                 },
             )
@@ -134,6 +143,36 @@ class MainActivity : ComponentActivity() {
 
         pdfSaveState = PdfSaveState.ChoosingDestination
         createPdfDocumentLauncher.launch(getString(R.string.pdf_default_filename))
+    }
+
+    private fun sharePdf() {
+        if (pdfShareState == PdfShareState.Preparing) return
+
+        pdfShareState = PdfShareState.Preparing
+        when (val result = createPdfShareIntent(scannedPdfUri)) {
+            is PdfShareIntentResult.Success -> {
+                try {
+                    val chooser = Intent.createChooser(
+                        result.intent,
+                        getString(R.string.pdf_share_chooser_title),
+                    )
+                    startActivity(chooser)
+                    pdfShareState = PdfShareState.Idle
+                } catch (_: ActivityNotFoundException) {
+                    pdfShareState = PdfShareState.Error(PdfShareError.ShareTargetUnavailable)
+                } catch (_: RuntimeException) {
+                    pdfShareState = PdfShareState.Error(PdfShareError.UnexpectedFailure)
+                }
+            }
+
+            PdfShareIntentResult.NoPdfAvailable -> {
+                pdfShareState = PdfShareState.Error(PdfShareError.NoPdfAvailable)
+            }
+
+            PdfShareIntentResult.InvalidUri -> {
+                pdfShareState = PdfShareState.Error(PdfShareError.InvalidUri)
+            }
+        }
     }
 
     private fun savePdfToDestination(destinationUri: Uri) {

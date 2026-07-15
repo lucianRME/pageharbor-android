@@ -13,6 +13,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.synapseworks.pageharbor.document.PdfSaveState
+import org.synapseworks.pageharbor.document.PdfShareState
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
 import org.synapseworks.pageharbor.ui.PageHarborApp
 
@@ -126,7 +127,22 @@ class HomeScreenTest {
     }
 
     @Test
-    fun savePdfButtonAppearsWhenPdfExists() {
+    fun sharePdfButtonDoesNotAppearWhenPdfIsMissing() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = ScannerSpikeState.ResultSummary(
+                    jpegPageCount = 1,
+                    hasPdf = false,
+                    pdfPageCount = null,
+                ),
+            )
+        }
+
+        composeTestRule.onAllNodesWithText("Share PDF").assertCountEquals(0)
+    }
+
+    @Test
+    fun pdfActionsAppearWhenPdfExists() {
         composeTestRule.setContent {
             PageHarborApp(
                 scannerSpikeState = ScannerSpikeState.ResultSummary(
@@ -138,6 +154,9 @@ class HomeScreenTest {
         }
 
         composeTestRule.onNodeWithText("Save PDF")
+            .assertIsDisplayed()
+            .assertIsEnabled()
+        composeTestRule.onNodeWithText("Share PDF")
             .assertIsDisplayed()
             .assertIsEnabled()
     }
@@ -165,6 +184,28 @@ class HomeScreenTest {
     }
 
     @Test
+    fun clickingSharePdfInvokesCallback() {
+        var shareClickCount = 0
+
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = ScannerSpikeState.ResultSummary(
+                    jpegPageCount = 1,
+                    hasPdf = true,
+                    pdfPageCount = 1,
+                ),
+                onSharePdf = {
+                    shareClickCount += 1
+                },
+            )
+        }
+
+        composeTestRule.onNodeWithText("Share PDF").performClick()
+
+        assertEquals(1, shareClickCount)
+    }
+
+    @Test
     fun savingStateDisablesRepeatedClicksAndShowsProgress() {
         composeTestRule.setContent {
             PageHarborApp(
@@ -180,6 +221,9 @@ class HomeScreenTest {
         composeTestRule.onNodeWithText("Save PDF")
             .assertIsDisplayed()
             .assertIsNotEnabled()
+        composeTestRule.onNodeWithText("Share PDF")
+            .assertIsDisplayed()
+            .assertIsEnabled()
         composeTestRule.onNodeWithText("Saving PDF…").assertIsDisplayed()
     }
 
@@ -199,6 +243,28 @@ class HomeScreenTest {
         composeTestRule.onNodeWithText("Save PDF")
             .assertIsDisplayed()
             .assertIsNotEnabled()
+    }
+
+    @Test
+    fun sharePreparingStateDisablesRepeatedShareClicksAndKeepsSaveEnabled() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = ScannerSpikeState.ResultSummary(
+                    jpegPageCount = 1,
+                    hasPdf = true,
+                    pdfPageCount = 1,
+                ),
+                pdfShareState = PdfShareState.Preparing,
+            )
+        }
+
+        composeTestRule.onNodeWithText("Share PDF")
+            .assertIsDisplayed()
+            .assertIsNotEnabled()
+        composeTestRule.onNodeWithText("Save PDF")
+            .assertIsDisplayed()
+            .assertIsEnabled()
+        composeTestRule.onNodeWithText("Preparing share…").assertIsDisplayed()
     }
 
     @Test

@@ -10,6 +10,8 @@ PageHarbor is in early development. This roadmap is public-facing and intentiona
 - Home screen and privacy messaging.
 - Branding and design system.
 - ML Kit technical spike integration.
+- PDF export through Android Storage Access Framework.
+- PDF sharing through Android share sheet.
 
 The ML Kit scanner spike is integrated, but real document scanning is not yet validated on a physical Android device.
 
@@ -24,8 +26,6 @@ The ML Kit scanner spike is integrated, but real document scanning is not yet va
 - Launch scanner reliably.
 - Handle one-page and multi-page results.
 - Simple result review.
-- Export PDF through Android Storage Access Framework.
-- Share through Android share sheet.
 - Temporary-file cleanup.
 - User-safe error handling.
 - Accessibility and physical-device validation.

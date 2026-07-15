@@ -22,6 +22,13 @@
     <string name="pdf_save_destination_unavailable">Selected destination is unavailable.</string>
     <string name="pdf_save_failed">PDF could not be saved. Try another destination.</string>
     <string name="pdf_default_filename" translatable="false">Document.pdf</string>
+    <string name="pdf_share_action">Share PDF</string>
+    <string name="pdf_share_progress">Preparing share…</string>
+    <string name="pdf_share_chooser_title">Share PDF</string>
+    <string name="pdf_share_no_pdf">PDF is not available to share.</string>
+    <string name="pdf_share_target_unavailable">No app is available to share the PDF.</string>
+    <string name="pdf_share_invalid_uri">PDF cannot be shared from this source.</string>
+    <string name="pdf_share_failed">PDF could not be shared.</string>
     <string name="home_privacy_action">How privacy works</string>
     <string name="home_about_action">About PageHarbor</string>
     <string name="home_debug_build_label">v%1$s (%2$d) · %3$s</string>
