@@ -11,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -26,12 +27,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.synapseworks.pageharbor.R
+import org.synapseworks.pageharbor.document.PdfSaveState
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
 
 @Composable
 fun HomeScreen(
     snackbarHostState: SnackbarHostState,
     scannerSpikeState: ScannerSpikeState,
+    pdfSaveState: PdfSaveState,
     showDevelopmentStatus: Boolean,
     versionName: String,
     versionCode: Int,
@@ -39,6 +42,7 @@ fun HomeScreen(
     showPrivacyInfo: Boolean,
     showAbout: Boolean,
     onScanDocument: () -> Unit,
+    onSavePdf: () -> Unit,
     onPrivacyInfo: () -> Unit,
     onDismissPrivacyInfo: () -> Unit,
     onAbout: () -> Unit,
@@ -122,6 +126,8 @@ fun HomeScreen(
                             ScanResultSummary(
                                 modifier = Modifier.padding(top = 24.dp),
                                 resultSummary = scannerSpikeState,
+                                pdfSaveState = pdfSaveState,
+                                onSavePdf = onSavePdf,
                                 onClearScanResult = onClearScanResult,
                             )
                         }
@@ -187,9 +193,14 @@ fun HomeScreen(
 @Composable
 private fun ScanResultSummary(
     resultSummary: ScannerSpikeState.ResultSummary,
+    pdfSaveState: PdfSaveState,
+    onSavePdf: () -> Unit,
     onClearScanResult: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val saveInProgress = pdfSaveState == PdfSaveState.ChoosingDestination ||
+        pdfSaveState == PdfSaveState.Saving
+
     Column(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -234,6 +245,34 @@ private fun ScanResultSummary(
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
         )
+        if (resultSummary.hasPdf) {
+            Button(
+                modifier = Modifier.padding(top = 8.dp),
+                enabled = !saveInProgress,
+                onClick = onSavePdf,
+            ) {
+                Text(text = stringResource(R.string.pdf_save_action))
+            }
+        }
+        if (saveInProgress) {
+            CircularProgressIndicator(
+                modifier = Modifier.padding(top = 8.dp),
+            )
+            Text(
+                text = stringResource(R.string.pdf_save_progress),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center,
+            )
+        }
+        if (pdfSaveState == PdfSaveState.Saved) {
+            Text(
+                text = stringResource(R.string.pdf_save_success),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center,
+            )
+        }
         OutlinedButton(
             modifier = Modifier.padding(top = 8.dp),
             onClick = onClearScanResult,

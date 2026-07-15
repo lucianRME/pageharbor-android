@@ -12,6 +12,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import org.synapseworks.pageharbor.document.PdfSaveState
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
 import org.synapseworks.pageharbor.ui.PageHarborApp
 
@@ -107,6 +108,133 @@ class HomeScreenTest {
         composeTestRule.onNodeWithText("PDF result: returned").assertIsDisplayed()
         composeTestRule.onNodeWithText("PDF pages: 3").assertIsDisplayed()
         composeTestRule.onNodeWithText("Scanner result was received locally.").assertIsDisplayed()
+    }
+
+    @Test
+    fun savePdfButtonDoesNotAppearWhenPdfIsMissing() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = ScannerSpikeState.ResultSummary(
+                    jpegPageCount = 1,
+                    hasPdf = false,
+                    pdfPageCount = null,
+                ),
+            )
+        }
+
+        composeTestRule.onAllNodesWithText("Save PDF").assertCountEquals(0)
+    }
+
+    @Test
+    fun savePdfButtonAppearsWhenPdfExists() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = ScannerSpikeState.ResultSummary(
+                    jpegPageCount = 1,
+                    hasPdf = true,
+                    pdfPageCount = 1,
+                ),
+            )
+        }
+
+        composeTestRule.onNodeWithText("Save PDF")
+            .assertIsDisplayed()
+            .assertIsEnabled()
+    }
+
+    @Test
+    fun clickingSavePdfInvokesCallback() {
+        var saveClickCount = 0
+
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = ScannerSpikeState.ResultSummary(
+                    jpegPageCount = 1,
+                    hasPdf = true,
+                    pdfPageCount = 1,
+                ),
+                onSavePdf = {
+                    saveClickCount += 1
+                },
+            )
+        }
+
+        composeTestRule.onNodeWithText("Save PDF").performClick()
+
+        assertEquals(1, saveClickCount)
+    }
+
+    @Test
+    fun savingStateDisablesRepeatedClicksAndShowsProgress() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = ScannerSpikeState.ResultSummary(
+                    jpegPageCount = 1,
+                    hasPdf = true,
+                    pdfPageCount = 1,
+                ),
+                pdfSaveState = PdfSaveState.Saving,
+            )
+        }
+
+        composeTestRule.onNodeWithText("Save PDF")
+            .assertIsDisplayed()
+            .assertIsNotEnabled()
+        composeTestRule.onNodeWithText("Saving PDF…").assertIsDisplayed()
+    }
+
+    @Test
+    fun destinationPickerStateDisablesRepeatedClicks() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = ScannerSpikeState.ResultSummary(
+                    jpegPageCount = 1,
+                    hasPdf = true,
+                    pdfPageCount = 1,
+                ),
+                pdfSaveState = PdfSaveState.ChoosingDestination,
+            )
+        }
+
+        composeTestRule.onNodeWithText("Save PDF")
+            .assertIsDisplayed()
+            .assertIsNotEnabled()
+    }
+
+    @Test
+    fun successMessageAppearsAfterPdfSave() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = ScannerSpikeState.ResultSummary(
+                    jpegPageCount = 1,
+                    hasPdf = true,
+                    pdfPageCount = 1,
+                ),
+                pdfSaveState = PdfSaveState.Saved,
+            )
+        }
+
+        composeTestRule.onNodeWithText("✓ PDF saved successfully").assertIsDisplayed()
+    }
+
+    @Test
+    fun cancelledDestinationSelectionReturnsToSaveReadyState() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = ScannerSpikeState.ResultSummary(
+                    jpegPageCount = 1,
+                    hasPdf = true,
+                    pdfPageCount = 1,
+                ),
+                pdfSaveState = PdfSaveState.Idle,
+            )
+        }
+
+        composeTestRule.onNodeWithText("Save PDF")
+            .assertIsDisplayed()
+            .assertIsEnabled()
+        composeTestRule.onAllNodesWithText("Saving PDF…").assertCountEquals(0)
+        composeTestRule.onAllNodesWithText("✓ PDF saved successfully").assertCountEquals(0)
     }
 
     @Test

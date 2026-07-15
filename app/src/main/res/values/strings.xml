@@ -15,6 +15,13 @@
     <string name="home_scan_result_pdf_pages">PDF pages: %1$d</string>
     <string name="home_scan_result_local_statement">Scanner result was received locally.</string>
     <string name="home_clear_scan_result">Clear scan result</string>
+    <string name="pdf_save_action">Save PDF</string>
+    <string name="pdf_save_progress">Saving PDF…</string>
+    <string name="pdf_save_success">✓ PDF saved successfully</string>
+    <string name="pdf_save_source_missing">PDF could not be saved because the scan result is no longer available.</string>
+    <string name="pdf_save_destination_unavailable">Selected destination is unavailable.</string>
+    <string name="pdf_save_failed">PDF could not be saved. Try another destination.</string>
+    <string name="pdf_default_filename" translatable="false">Document.pdf</string>
     <string name="home_privacy_action">How privacy works</string>
     <string name="home_about_action">About PageHarbor</string>
     <string name="home_debug_build_label">v%1$s (%2$d) · %3$s</string>

@@ -31,3 +31,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added a public roadmap
 - Added debug version and build metadata
 - Added an About dialog with project attribution
+- Added PDF saving through Android's Storage Access Framework for ML Kit scan results
