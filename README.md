@@ -1,10 +1,12 @@
 # PageHarbor
 
-PageHarbor is an open-source, privacy-first Android document scanner. The project is in early development. The Android project foundation exists, but document-scanning features are planned and are not yet claimed to be implemented.
+PageHarbor is an open-source, privacy-first Android document scanner. The app is under development and is not production-ready.
 
 ## Current status
 
-The Android Compose foundation, privacy documentation, architecture boundaries, and initial branding system are in place. ML Kit Document Scanner integration is under technical validation. Saving and sharing a returned scanned PDF and exporting returned scan pages individually through Android system interfaces are implemented, but the broader scanning workflow still requires physical-device validation before release.
+The latest completed milestone is `v0.2.0-dev`. Scanning, PDF save, PDF share, and JPEG page export are implemented and physically validated on Samsung Android 16.
+
+The current development version is `v0.3.0-dev`, focused on the Review Experience. The exact PageHarbor-owned review scope remains subject to technical validation because ML Kit already provides some review behavior inside its scanner UI.
 
 See [ROADMAP.md](ROADMAP.md) for the current project roadmap.
 
@@ -31,7 +33,7 @@ See [ROADMAP.md](ROADMAP.md) for the current project roadmap.
 - Jetpack Compose
 - Material 3
 - Gradle Kotlin DSL
-- ML Kit Document Scanner, subject to final implementation validation
+- ML Kit Document Scanner
 - Android Storage Access Framework
 
 PageHarbor is intended to process documents locally on the device and let users choose where files are saved or shared. Cloud providers such as Google Drive or OneDrive may appear as destinations through the Android system file picker. PageHarbor does not operate proprietary cloud storage or directly access those services.

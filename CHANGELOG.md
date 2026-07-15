@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Began the `0.3.0-dev` development cycle focused on the review experience
+
+## [0.2.0-dev]
+
 ### Added
 
 - Initial repository setup
@@ -34,6 +40,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added PDF saving through Android's Storage Access Framework for ML Kit scan results
 - Added PDF sharing through Android's native share sheet for ML Kit scan results
 - Added individual scanned-page export through Android's Storage Access Framework
+- Completed physical-device validation on Samsung Android 16
 
 ### Fixed
 

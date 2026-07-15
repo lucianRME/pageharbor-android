@@ -10,26 +10,36 @@ PageHarbor is in early development. This roadmap is public-facing and intentiona
 - Home screen and privacy messaging.
 - Branding and design system.
 - ML Kit technical spike integration.
-- PDF export through Android Storage Access Framework.
-- PDF sharing through Android share sheet.
-- JPEG page export through Android Storage Access Framework.
+- `v0.2.0-dev` export milestone:
+  - Save PDF through Android Storage Access Framework.
+  - Share PDF through the Android share sheet.
+  - Export Pages as JPEG through Android Storage Access Framework.
+  - Physical Samsung validation on Android 16.
 
-The ML Kit scanner spike is integrated, but real document scanning is not yet validated on a physical Android device.
+Document scanning, PDF save, PDF share, and JPEG page export have been validated on a physical Samsung device.
 
 ## In Progress
 
-- Validate ML Kit scanner on a Google Play-enabled emulator and physical Android device.
-- Validate first-run module download and offline-after-install behavior.
-- Confirm JPEG/PDF result behavior and cancellation handling.
+### `v0.3.0-dev` — Review Experience
+
+Planned targets:
+
+- Preview scanned pages.
+- Show page count and ordering.
+- Remove a page where technically supported.
+- Reorder pages where technically supported.
+- Rotate pages where technically supported.
+- Rescan or return to the scanner where technically practical.
+- Ensure reviewed content is what gets saved, shared, and exported.
+
+ML Kit already provides some review behavior inside its scanner UI. The exact scope of a PageHarbor-owned review experience still requires technical validation. PageHarbor does not currently own or edit page image content after ML Kit returns it.
 
 ## Planned MVP
 
-- Launch scanner reliably.
-- Handle one-page and multi-page results.
-- Simple result review.
+- Review one-page and multi-page scan results.
 - Temporary-file cleanup.
 - User-safe error handling.
-- Accessibility and physical-device validation.
+- Accessibility validation.
 
 ## Later Considerations
 
