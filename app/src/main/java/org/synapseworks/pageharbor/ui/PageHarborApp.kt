@@ -10,6 +10,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import org.synapseworks.pageharbor.BuildConfig
 import org.synapseworks.pageharbor.R
+import org.synapseworks.pageharbor.document.PageExportResult
+import org.synapseworks.pageharbor.document.PageExportState
 import org.synapseworks.pageharbor.document.PdfExportResult
 import org.synapseworks.pageharbor.document.PdfSaveState
 import org.synapseworks.pageharbor.document.PdfShareError
@@ -23,9 +25,11 @@ fun PageHarborApp(
     scannerSpikeState: ScannerSpikeState = ScannerSpikeState.Idle,
     pdfSaveState: PdfSaveState = PdfSaveState.Idle,
     pdfShareState: PdfShareState = PdfShareState.Idle,
+    pageExportState: PageExportState = PageExportState.Idle,
     onScanDocument: () -> Unit = {},
     onSavePdf: () -> Unit = {},
     onSharePdf: () -> Unit = {},
+    onExportPages: () -> Unit = {},
     onViewSourceCode: () -> Unit = {},
     onClearScanResult: () -> Unit = {},
 ) {
@@ -42,12 +46,17 @@ fun PageHarborApp(
         val pdfShareTargetUnavailableMessage = stringResource(R.string.pdf_share_target_unavailable)
         val pdfShareInvalidUriMessage = stringResource(R.string.pdf_share_invalid_uri)
         val pdfShareFailedMessage = stringResource(R.string.pdf_share_failed)
+        val pageExportSourceMissingMessage = stringResource(R.string.page_export_source_missing)
+        val pageExportDestinationUnavailableMessage =
+            stringResource(R.string.page_export_destination_unavailable)
+        val pageExportFailedMessage = stringResource(R.string.page_export_failed)
 
         HomeScreen(
             snackbarHostState = snackbarHostState,
             scannerSpikeState = scannerSpikeState,
             pdfSaveState = pdfSaveState,
             pdfShareState = pdfShareState,
+            pageExportState = pageExportState,
             showDevelopmentStatus = BuildConfig.DEBUG,
             versionName = BuildConfig.VERSION_NAME,
             versionCode = BuildConfig.VERSION_CODE,
@@ -59,6 +68,7 @@ fun PageHarborApp(
             },
             onSavePdf = onSavePdf,
             onSharePdf = onSharePdf,
+            onExportPages = onExportPages,
             onPrivacyInfo = {
                 showPrivacyInfo = true
             },
@@ -124,6 +134,29 @@ fun PageHarborApp(
 
                 PdfShareState.Idle,
                 PdfShareState.Preparing,
+                -> null
+            }
+
+            if (message != null) {
+                snackbarHostState.showSnackbar(message)
+            }
+        }
+
+        LaunchedEffect(pageExportState) {
+            val message = when (pageExportState) {
+                is PageExportState.Error -> when (pageExportState.result) {
+                    PageExportResult.SourceMissing -> pageExportSourceMissingMessage
+                    PageExportResult.DestinationUnavailable ->
+                        pageExportDestinationUnavailableMessage
+                    PageExportResult.WriteFailed -> pageExportFailedMessage
+                    PageExportResult.Success -> null
+                }
+
+                PageExportState.Idle,
+                is PageExportState.ChoosingDestination,
+                is PageExportState.Exporting,
+                is PageExportState.Completed,
+                is PageExportState.Cancelled,
                 -> null
             }
 

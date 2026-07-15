@@ -29,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.synapseworks.pageharbor.R
+import org.synapseworks.pageharbor.document.PageExportState
 import org.synapseworks.pageharbor.document.PdfSaveState
 import org.synapseworks.pageharbor.document.PdfShareState
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
@@ -39,6 +40,7 @@ fun HomeScreen(
     scannerSpikeState: ScannerSpikeState,
     pdfSaveState: PdfSaveState,
     pdfShareState: PdfShareState,
+    pageExportState: PageExportState,
     showDevelopmentStatus: Boolean,
     versionName: String,
     versionCode: Int,
@@ -48,6 +50,7 @@ fun HomeScreen(
     onScanDocument: () -> Unit,
     onSavePdf: () -> Unit,
     onSharePdf: () -> Unit,
+    onExportPages: () -> Unit,
     onPrivacyInfo: () -> Unit,
     onDismissPrivacyInfo: () -> Unit,
     onAbout: () -> Unit,
@@ -133,8 +136,10 @@ fun HomeScreen(
                                 resultSummary = scannerSpikeState,
                                 pdfSaveState = pdfSaveState,
                                 pdfShareState = pdfShareState,
+                                pageExportState = pageExportState,
                                 onSavePdf = onSavePdf,
                                 onSharePdf = onSharePdf,
+                                onExportPages = onExportPages,
                                 onClearScanResult = onClearScanResult,
                             )
                         }
@@ -202,14 +207,21 @@ private fun ScanResultSummary(
     resultSummary: ScannerSpikeState.ResultSummary,
     pdfSaveState: PdfSaveState,
     pdfShareState: PdfShareState,
+    pageExportState: PageExportState,
     onSavePdf: () -> Unit,
     onSharePdf: () -> Unit,
+    onExportPages: () -> Unit,
     onClearScanResult: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val saveInProgress = pdfSaveState == PdfSaveState.ChoosingDestination ||
         pdfSaveState == PdfSaveState.Saving
     val shareInProgress = pdfShareState == PdfShareState.Preparing
+    val pageExportProgress = when (pageExportState) {
+        is PageExportState.ChoosingDestination -> pageExportState
+        is PageExportState.Exporting -> pageExportState
+        else -> null
+    }
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -263,11 +275,25 @@ private fun ScanResultSummary(
             ) {
                 Text(text = stringResource(R.string.pdf_save_action))
             }
-            OutlinedButton(
-                enabled = !shareInProgress,
-                onClick = onSharePdf,
-            ) {
-                Text(text = stringResource(R.string.pdf_share_action))
+        }
+        if (resultSummary.hasPdf || resultSummary.jpegPageCount > 0) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (resultSummary.hasPdf) {
+                    OutlinedButton(
+                        enabled = !shareInProgress,
+                        onClick = onSharePdf,
+                    ) {
+                        Text(text = stringResource(R.string.pdf_share_action))
+                    }
+                }
+                if (resultSummary.jpegPageCount > 0) {
+                    OutlinedButton(
+                        enabled = pageExportProgress == null,
+                        onClick = onExportPages,
+                    ) {
+                        Text(text = stringResource(R.string.page_export_action))
+                    }
+                }
             }
         }
         if (saveInProgress) {
@@ -298,11 +324,55 @@ private fun ScanResultSummary(
                 )
             }
         }
+        if (pageExportProgress != null) {
+            val pageNumber = when (pageExportProgress) {
+                is PageExportState.ChoosingDestination -> pageExportProgress.pageNumber
+                is PageExportState.Exporting -> pageExportProgress.pageNumber
+                else -> error("Unexpected page export state")
+            }
+            val pageCount = when (pageExportProgress) {
+                is PageExportState.ChoosingDestination -> pageExportProgress.pageCount
+                is PageExportState.Exporting -> pageExportProgress.pageCount
+                else -> error("Unexpected page export state")
+            }
+            Row(
+                modifier = Modifier.padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                Text(
+                    text = stringResource(
+                        R.string.page_export_progress,
+                        pageNumber,
+                        pageCount,
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+            }
+        }
         if (pdfSaveState == PdfSaveState.Saved) {
             Text(
                 text = stringResource(R.string.pdf_save_success),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center,
+            )
+        }
+        if (pageExportState is PageExportState.Completed) {
+            Text(
+                text = stringResource(R.string.page_export_success),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center,
+            )
+        }
+        if (pageExportState is PageExportState.Cancelled) {
+            Text(
+                text = stringResource(R.string.page_export_cancelled),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
         }

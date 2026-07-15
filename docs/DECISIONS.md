@@ -75,3 +75,14 @@ The MVP focuses on scanning, review, PDF export, and user-selected save or share
 
 Consequences:
 Users control saved files through their chosen destinations. PageHarbor must avoid retaining document copies beyond the active scan and export workflow except where strictly required for retry, sharing, or cleanup.
+
+## ADR-006: Grantable URIs For PDF Sharing
+
+Decision:
+Share ML Kit PDF results directly when they use a grantable `content` URI. When ML Kit returns a readable but non-grantable URI, copy the PDF byte-for-byte into PageHarbor's private cache and share it through a narrowly scoped `FileProvider` content URI.
+
+Rationale:
+Physical-device validation showed that ML Kit can return a PDF URI that PageHarbor can read but Android cannot safely grant to another application. Raw file locations must not be exposed, and share targets require temporary read access to a content URI.
+
+Consequences:
+The FileProvider exposes only the `shared-pdfs` cache directory. Partial copies are deleted after preparation failures. Completed copies are eligible for operating-system cache eviction and PageHarbor removes copies at least 24 hours old when the app starts. No storage permission, network access, or re-encoding is introduced.

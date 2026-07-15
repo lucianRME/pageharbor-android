@@ -22,13 +22,22 @@ import java.io.InputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.synapseworks.pageharbor.document.PageExportResult
+import org.synapseworks.pageharbor.document.PageExportState
 import org.synapseworks.pageharbor.document.PdfExportResult
 import org.synapseworks.pageharbor.document.PdfSaveState
 import org.synapseworks.pageharbor.document.PdfShareError
 import org.synapseworks.pageharbor.document.PdfShareIntentResult
+import org.synapseworks.pageharbor.document.PdfSharePreparationResult
 import org.synapseworks.pageharbor.document.PdfShareState
+import org.synapseworks.pageharbor.document.copyPageToDestination
 import org.synapseworks.pageharbor.document.copyPdfToDestination
 import org.synapseworks.pageharbor.document.createPdfShareIntent
+import org.synapseworks.pageharbor.document.deleteStaleSharedPdfs
+import org.synapseworks.pageharbor.document.pageExportStateAfterCancellation
+import org.synapseworks.pageharbor.document.pageExportStateAfterSuccess
+import org.synapseworks.pageharbor.document.preparePdfForSharing
+import org.synapseworks.pageharbor.document.startPageExport
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
 import org.synapseworks.pageharbor.scanner.createScannerResultSummary
 import org.synapseworks.pageharbor.ui.PageHarborApp
@@ -37,14 +46,18 @@ class MainActivity : ComponentActivity() {
     private var scannerSpikeState: ScannerSpikeState by mutableStateOf(ScannerSpikeState.Idle)
     private var pdfSaveState: PdfSaveState by mutableStateOf(PdfSaveState.Idle)
     private var pdfShareState: PdfShareState by mutableStateOf(PdfShareState.Idle)
+    private var pageExportState: PageExportState by mutableStateOf(PageExportState.Idle)
     private var scannedPdfUri: Uri? = null
+    private var scannedPageUris: List<Uri> = emptyList()
 
     private val scanLauncher = registerForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult(),
     ) { result ->
         scannedPdfUri = null
+        scannedPageUris = emptyList()
         pdfSaveState = PdfSaveState.Idle
         pdfShareState = PdfShareState.Idle
+        pageExportState = PageExportState.Idle
 
         if (result.resultCode == Activity.RESULT_CANCELED) {
             scannerSpikeState = ScannerSpikeState.Cancelled
@@ -64,6 +77,7 @@ class MainActivity : ComponentActivity() {
                 ScannerSpikeState.Error
             } else {
                 scannedPdfUri = scannerResult.pdf?.uri
+                scannedPageUris = scannerResult.pages.orEmpty().map { page -> page.imageUri }
                 createScannerResultSummary(
                     jpegPageCount = jpegPageCount,
                     pdfPageCount = pdfPageCount,
@@ -83,21 +97,42 @@ class MainActivity : ComponentActivity() {
         savePdfToDestination(destinationUri)
     }
 
+    private val createPageDocumentLauncher = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("image/jpeg"),
+    ) { destinationUri ->
+        val currentState = pageExportState as? PageExportState.ChoosingDestination
+            ?: return@registerForActivityResult
+
+        if (destinationUri == null) {
+            pageExportState = pageExportStateAfterCancellation(currentState.pageNumber)
+            return@registerForActivityResult
+        }
+
+        exportPageToDestination(currentState, destinationUri)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        lifecycleScope.launch(Dispatchers.IO) {
+            deleteStaleSharedPdfs(cacheDir)
+        }
         setContent {
             PageHarborApp(
                 scannerSpikeState = scannerSpikeState,
                 pdfSaveState = pdfSaveState,
                 pdfShareState = pdfShareState,
+                pageExportState = pageExportState,
                 onScanDocument = ::launchDocumentScanner,
                 onSavePdf = ::choosePdfDestination,
                 onSharePdf = ::sharePdf,
+                onExportPages = ::exportPages,
                 onViewSourceCode = ::openSourceCode,
                 onClearScanResult = {
                     scannedPdfUri = null
+                    scannedPageUris = emptyList()
                     pdfSaveState = PdfSaveState.Idle
                     pdfShareState = PdfShareState.Idle
+                    pageExportState = PageExportState.Idle
                     scannerSpikeState = ScannerSpikeState.Idle
                 },
             )
@@ -148,8 +183,28 @@ class MainActivity : ComponentActivity() {
     private fun sharePdf() {
         if (pdfShareState == PdfShareState.Preparing) return
 
+        val pdfUri = scannedPdfUri
         pdfShareState = PdfShareState.Preparing
-        when (val result = createPdfShareIntent(scannedPdfUri)) {
+        lifecycleScope.launch {
+            val preparationResult = withContext(Dispatchers.IO) {
+                preparePdfForSharing(this@MainActivity, pdfUri)
+            }
+            when (preparationResult) {
+                is PdfSharePreparationResult.Ready -> launchPdfShare(preparationResult.uri)
+
+                PdfSharePreparationResult.SourceMissing -> {
+                    pdfShareState = PdfShareState.Error(PdfShareError.NoPdfAvailable)
+                }
+
+                PdfSharePreparationResult.Failed -> {
+                    pdfShareState = PdfShareState.Error(PdfShareError.UnexpectedFailure)
+                }
+            }
+        }
+    }
+
+    private fun launchPdfShare(pdfUri: Uri) {
+        when (val result = createPdfShareIntent(pdfUri)) {
             is PdfShareIntentResult.Success -> {
                 try {
                     val chooser = Intent.createChooser(
@@ -160,6 +215,10 @@ class MainActivity : ComponentActivity() {
                     pdfShareState = PdfShareState.Idle
                 } catch (_: ActivityNotFoundException) {
                     pdfShareState = PdfShareState.Error(PdfShareError.ShareTargetUnavailable)
+                } catch (_: SecurityException) {
+                    pdfShareState = PdfShareState.Error(PdfShareError.UnexpectedFailure)
+                } catch (_: IllegalArgumentException) {
+                    pdfShareState = PdfShareState.Error(PdfShareError.UnexpectedFailure)
                 } catch (_: RuntimeException) {
                     pdfShareState = PdfShareState.Error(PdfShareError.UnexpectedFailure)
                 }
@@ -172,6 +231,61 @@ class MainActivity : ComponentActivity() {
             PdfShareIntentResult.InvalidUri -> {
                 pdfShareState = PdfShareState.Error(PdfShareError.InvalidUri)
             }
+        }
+    }
+
+    private fun exportPages() {
+        if (pageExportState is PageExportState.ChoosingDestination ||
+            pageExportState is PageExportState.Exporting
+        ) {
+            return
+        }
+
+        pageExportState = startPageExport(scannedPageUris.size)
+        val initialState = pageExportState as? PageExportState.ChoosingDestination ?: return
+        launchPageDestination(initialState)
+    }
+
+    private fun launchPageDestination(state: PageExportState.ChoosingDestination) {
+        try {
+            createPageDocumentLauncher.launch(
+                getString(R.string.page_export_default_filename, state.pageNumber),
+            )
+        } catch (_: ActivityNotFoundException) {
+            pageExportState = PageExportState.Error(PageExportResult.DestinationUnavailable)
+        } catch (_: RuntimeException) {
+            pageExportState = PageExportState.Error(PageExportResult.DestinationUnavailable)
+        }
+    }
+
+    private fun exportPageToDestination(
+        state: PageExportState.ChoosingDestination,
+        destinationUri: Uri,
+    ) {
+        val sourceUri = scannedPageUris.getOrNull(state.pageNumber - 1)
+        if (sourceUri == null) {
+            pageExportState = PageExportState.Error(PageExportResult.SourceMissing)
+            return
+        }
+
+        pageExportState = PageExportState.Exporting(
+            pageNumber = state.pageNumber,
+            pageCount = state.pageCount,
+        )
+        lifecycleScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                copyScannedPage(sourceUri, destinationUri)
+            }
+            if (result != PageExportResult.Success) {
+                pageExportState = PageExportState.Error(result)
+                return@launch
+            }
+
+            pageExportState = pageExportStateAfterSuccess(
+                pageNumber = state.pageNumber,
+                pageCount = state.pageCount,
+            )
+            (pageExportState as? PageExportState.ChoosingDestination)?.let(::launchPageDestination)
         }
     }
 
@@ -222,6 +336,33 @@ class MainActivity : ComponentActivity() {
         }
 
         return copyPdfToDestination(source, destination)
+    }
+
+    private fun copyScannedPage(sourceUri: Uri, destinationUri: Uri): PageExportResult {
+        val source = try {
+            contentResolver.openInputStream(sourceUri)
+        } catch (_: FileNotFoundException) {
+            null
+        } catch (_: IOException) {
+            return PageExportResult.WriteFailed
+        } catch (_: SecurityException) {
+            return PageExportResult.SourceMissing
+        }
+
+        val destination = try {
+            contentResolver.openOutputStream(destinationUri)
+        } catch (_: FileNotFoundException) {
+            source.closeSafely()
+            return PageExportResult.DestinationUnavailable
+        } catch (_: IOException) {
+            source.closeSafely()
+            return PageExportResult.DestinationUnavailable
+        } catch (_: SecurityException) {
+            source.closeSafely()
+            return PageExportResult.DestinationUnavailable
+        }
+
+        return copyPageToDestination(source, destination)
     }
 
     private fun InputStream?.closeSafely() {

@@ -9,7 +9,7 @@
     <string name="home_scan_cancelled">Scan cancelled.</string>
     <string name="home_scanner_error">Document scanner could not be opened.</string>
     <string name="home_scan_result_title">Scanner result received</string>
-    <string name="home_scan_result_jpeg_pages">JPEG pages: %1$d</string>
+    <string name="home_scan_result_jpeg_pages">Scanned pages: %1$d</string>
     <string name="home_scan_result_pdf_returned">PDF result: returned</string>
     <string name="home_scan_result_pdf_not_returned">PDF result: not returned</string>
     <string name="home_scan_result_pdf_pages">PDF pages: %1$d</string>
@@ -29,6 +29,14 @@
     <string name="pdf_share_target_unavailable">No app is available to share the PDF.</string>
     <string name="pdf_share_invalid_uri">PDF cannot be shared from this source.</string>
     <string name="pdf_share_failed">PDF could not be shared.</string>
+    <string name="page_export_action">Export Pages</string>
+    <string name="page_export_progress">Exporting page %1$d of %2$d…</string>
+    <string name="page_export_success">✓ Pages exported successfully</string>
+    <string name="page_export_cancelled">Page export cancelled.</string>
+    <string name="page_export_source_missing">Pages could not be exported because the scan result is no longer available.</string>
+    <string name="page_export_destination_unavailable">Selected destination is unavailable.</string>
+    <string name="page_export_failed">Page could not be exported. Try another destination.</string>
+    <string name="page_export_default_filename" translatable="false">Document-%1$d.jpg</string>
     <string name="home_privacy_action">How privacy works</string>
     <string name="home_about_action">About PageHarbor</string>
     <string name="home_debug_build_label">v%1$s (%2$d) · %3$s</string>

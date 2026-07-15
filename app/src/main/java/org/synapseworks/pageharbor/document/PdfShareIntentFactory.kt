@@ -1,5 +1,6 @@
 package org.synapseworks.pageharbor.document
 
+import android.content.ClipData
 import android.content.ContentResolver
 import android.content.Intent
 import android.net.Uri
@@ -17,7 +18,10 @@ fun createPdfShareIntent(pdfUri: Uri?): PdfShareIntentResult {
     val intent = Intent(Intent.ACTION_SEND)
         .setType("application/pdf")
         .putExtra(Intent.EXTRA_STREAM, pdfUri)
-        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        .apply {
+            clipData = ClipData.newRawUri("PDF", pdfUri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
 
     return PdfShareIntentResult.Success(intent)
 }

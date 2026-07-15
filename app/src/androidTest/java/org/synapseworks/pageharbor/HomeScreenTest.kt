@@ -12,6 +12,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import org.synapseworks.pageharbor.document.PageExportState
 import org.synapseworks.pageharbor.document.PdfSaveState
 import org.synapseworks.pageharbor.document.PdfShareState
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
@@ -105,7 +106,7 @@ class HomeScreenTest {
             )
         }
 
-        composeTestRule.onNodeWithText("JPEG pages: 3").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Scanned pages: 3").assertIsDisplayed()
         composeTestRule.onNodeWithText("PDF result: returned").assertIsDisplayed()
         composeTestRule.onNodeWithText("PDF pages: 3").assertIsDisplayed()
         composeTestRule.onNodeWithText("Scanner result was received locally.").assertIsDisplayed()
@@ -162,6 +163,38 @@ class HomeScreenTest {
     }
 
     @Test
+    fun exportPagesButtonDoesNotAppearWhenPagesAreMissing() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = ScannerSpikeState.ResultSummary(
+                    jpegPageCount = 0,
+                    hasPdf = true,
+                    pdfPageCount = 1,
+                ),
+            )
+        }
+
+        composeTestRule.onAllNodesWithText("Export Pages").assertCountEquals(0)
+    }
+
+    @Test
+    fun exportPagesButtonAppearsWhenPagesExist() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = ScannerSpikeState.ResultSummary(
+                    jpegPageCount = 2,
+                    hasPdf = false,
+                    pdfPageCount = null,
+                ),
+            )
+        }
+
+        composeTestRule.onNodeWithText("Export Pages")
+            .assertIsDisplayed()
+            .assertIsEnabled()
+    }
+
+    @Test
     fun clickingSavePdfInvokesCallback() {
         var saveClickCount = 0
 
@@ -203,6 +236,28 @@ class HomeScreenTest {
         composeTestRule.onNodeWithText("Share PDF").performClick()
 
         assertEquals(1, shareClickCount)
+    }
+
+    @Test
+    fun clickingExportPagesInvokesCallback() {
+        var exportClickCount = 0
+
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = ScannerSpikeState.ResultSummary(
+                    jpegPageCount = 2,
+                    hasPdf = true,
+                    pdfPageCount = 2,
+                ),
+                onExportPages = {
+                    exportClickCount += 1
+                },
+            )
+        }
+
+        composeTestRule.onNodeWithText("Export Pages").performClick()
+
+        assertEquals(1, exportClickCount)
     }
 
     @Test
@@ -268,6 +323,52 @@ class HomeScreenTest {
     }
 
     @Test
+    fun pageExportingStateDisablesRepeatedClicksAndShowsProgress() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = ScannerSpikeState.ResultSummary(
+                    jpegPageCount = 3,
+                    hasPdf = true,
+                    pdfPageCount = 3,
+                ),
+                pageExportState = PageExportState.Exporting(
+                    pageNumber = 2,
+                    pageCount = 3,
+                ),
+            )
+        }
+
+        composeTestRule.onNodeWithText("Export Pages")
+            .assertIsDisplayed()
+            .assertIsNotEnabled()
+        composeTestRule.onNodeWithText("Exporting page 2 of 3…").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Save PDF").assertIsEnabled()
+        composeTestRule.onNodeWithText("Share PDF").assertIsEnabled()
+    }
+
+    @Test
+    fun pageDestinationPickerStateDisablesRepeatedClicksAndShowsProgress() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = ScannerSpikeState.ResultSummary(
+                    jpegPageCount = 2,
+                    hasPdf = false,
+                    pdfPageCount = null,
+                ),
+                pageExportState = PageExportState.ChoosingDestination(
+                    pageNumber = 1,
+                    pageCount = 2,
+                ),
+            )
+        }
+
+        composeTestRule.onNodeWithText("Export Pages")
+            .assertIsDisplayed()
+            .assertIsNotEnabled()
+        composeTestRule.onNodeWithText("Exporting page 1 of 2…").assertIsDisplayed()
+    }
+
+    @Test
     fun successMessageAppearsAfterPdfSave() {
         composeTestRule.setContent {
             PageHarborApp(
@@ -281,6 +382,42 @@ class HomeScreenTest {
         }
 
         composeTestRule.onNodeWithText("✓ PDF saved successfully").assertIsDisplayed()
+    }
+
+    @Test
+    fun successMessageAppearsAfterPageExport() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = ScannerSpikeState.ResultSummary(
+                    jpegPageCount = 2,
+                    hasPdf = false,
+                    pdfPageCount = null,
+                ),
+                pageExportState = PageExportState.Completed(pageCount = 2),
+            )
+        }
+
+        composeTestRule.onNodeWithText("✓ Pages exported successfully").assertIsDisplayed()
+    }
+
+    @Test
+    fun cancellationMessageAppearsAndExportCanBeRetried() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = ScannerSpikeState.ResultSummary(
+                    jpegPageCount = 3,
+                    hasPdf = false,
+                    pdfPageCount = null,
+                ),
+                pageExportState = PageExportState.Cancelled(exportedPageCount = 1),
+            )
+        }
+
+        composeTestRule.onNodeWithText("Page export cancelled.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Export Pages")
+            .assertIsDisplayed()
+            .assertIsEnabled()
+        composeTestRule.onAllNodesWithText("Exporting page 2 of 3…").assertCountEquals(0)
     }
 
     @Test

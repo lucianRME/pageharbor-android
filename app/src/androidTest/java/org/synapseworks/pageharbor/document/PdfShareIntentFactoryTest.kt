@@ -23,7 +23,12 @@ class PdfShareIntentFactoryTest {
             pdfUri,
             IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java),
         )
+        assertEquals(pdfUri, intent.clipData?.getItemAt(0)?.uri)
         assertTrue(intent.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION != 0)
+
+        val chooser = Intent.createChooser(intent, "Share PDF")
+        assertEquals(pdfUri, chooser.clipData?.getItemAt(0)?.uri)
+        assertTrue(chooser.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION != 0)
     }
 
     @Test
