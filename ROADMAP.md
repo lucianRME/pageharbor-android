@@ -35,6 +35,8 @@ Planned targets:
 
 OCR is optional: it must run only after explicit user action and must never block scanning or export. OCR results remain in memory unless the user explicitly copies or exports them. PageHarbor will not introduce cloud OCR or a proprietary backend.
 
+The current UI keeps Home focused on starting a scan. Scan Result owns export and OCR actions plus their feedback, while OCR Result owns in-memory recognized-text actions. There is no bottom navigation or internal document library.
+
 PageHarbor intentionally relies on ML Kit for scanner editing capabilities rather than duplicating crop, rotate, filters, page deletion, or reordering. Use platform capabilities where they are strong. Build only what adds distinct user value.
 
 Implementation sequence:

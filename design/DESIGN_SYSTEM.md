@@ -95,3 +95,7 @@ Keep motion subtle and functional.
 Use Material icons for normal UI actions where available.
 
 The PageHarbor brand mark is custom. It should represent the product identity and should not be reused as a generic UI icon.
+
+## Action hierarchy
+
+Use filled buttons for Scan document, Save PDF, and Copy text; outlined buttons for Share PDF, Export Pages, Recognize Text, and Scan Again; and text buttons for Privacy, About, clear, and discard actions. Normal scan UI uses product copy such as “Scan complete” and page-ready summaries, never scanner diagnostics.

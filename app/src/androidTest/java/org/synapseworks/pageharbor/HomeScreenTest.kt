@@ -100,7 +100,7 @@ class HomeScreenTest {
     }
 
     @Test
-    fun successfulSummaryDisplaysPageCountAndPdfAvailability() {
+    fun successfulSummaryUsesProductFacingPageWordingWithoutDiagnostics() {
         composeTestRule.setContent {
             PageHarborApp(
                 scannerSpikeState = ScannerSpikeState.ResultSummary(
@@ -111,10 +111,12 @@ class HomeScreenTest {
             )
         }
 
-        composeTestRule.onNodeWithText("Scanned pages: 3").assertIsDisplayed()
-        composeTestRule.onNodeWithText("PDF result: returned").assertIsDisplayed()
-        composeTestRule.onNodeWithText("PDF pages: 3").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Scanner result was received locally.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Scan complete").assertIsDisplayed()
+        composeTestRule.onNodeWithText("3 pages ready").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Save PDF").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Share PDF").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Export Pages").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Recognize Text").assertIsDisplayed()
     }
 
     @Test
@@ -386,7 +388,8 @@ class HomeScreenTest {
             )
         }
 
-        composeTestRule.onNodeWithText("✓ PDF saved successfully").assertIsDisplayed()
+        composeTestRule.onNodeWithText("PDF saved successfully").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Save PDF").assertIsEnabled()
     }
 
     @Test

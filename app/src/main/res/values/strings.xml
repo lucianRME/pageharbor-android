@@ -5,6 +5,12 @@
     <string name="home_headline">Scan documents without giving them away.</string>
     <string name="home_supporting_text">PageHarbor is designed to process documents on your device, without accounts, ads, or tracking.</string>
     <string name="home_scan_document">Scan document</string>
+    <string name="home_view_scan_result">View current scan</string>
+    <string name="scan_result_title">Scanned document</string>
+    <string name="scan_complete">Scan complete</string>
+    <string name="scan_page_ready">%1$d page ready</string>
+    <string name="scan_pages_ready">%1$d pages ready</string>
+    <string name="scan_again_action">Scan again</string>
     <string name="home_scan_preparing">Preparing scanner…</string>
     <string name="home_scan_cancelled">Scan cancelled.</string>
     <string name="home_scanner_error">Document scanner could not be opened.</string>
@@ -37,7 +43,7 @@
     <string name="ocr_error_unexpected">Text recognition could not be completed.</string>
     <string name="pdf_save_action">Save PDF</string>
     <string name="pdf_save_progress">Saving PDF…</string>
-    <string name="pdf_save_success">✓ PDF saved successfully</string>
+    <string name="pdf_save_success">PDF saved successfully</string>
     <string name="pdf_save_source_missing">PDF could not be saved because the scan result is no longer available.</string>
     <string name="pdf_save_destination_unavailable">Selected destination is unavailable.</string>
     <string name="pdf_save_failed">PDF could not be saved. Try another destination.</string>

@@ -23,6 +23,7 @@ import org.synapseworks.pageharbor.scanner.ScannerSpikeState
 import org.synapseworks.pageharbor.ocr.OcrUiState
 import org.synapseworks.pageharbor.ui.home.HomeScreen
 import org.synapseworks.pageharbor.ui.home.OcrResultScreen
+import org.synapseworks.pageharbor.ui.home.ScanResultScreen
 import org.synapseworks.pageharbor.ui.theme.PageHarborTheme
 
 @Composable
@@ -43,7 +44,7 @@ fun PageHarborApp(
     onClearScanResult: () -> Unit = {},
 ) {
     PageHarborTheme {
-        var showOcrResult by remember { mutableStateOf(false) }
+        var screen by remember { mutableStateOf(AppScreen.Home) }
         val snackbarHostState = remember { SnackbarHostState() }
         val coroutineScope = rememberCoroutineScope()
         val context = LocalContext.current
@@ -64,17 +65,18 @@ fun PageHarborApp(
             stringResource(R.string.page_export_destination_unavailable)
         val pageExportFailedMessage = stringResource(R.string.page_export_failed)
 
-        if (showOcrResult && ocrUiState is OcrUiState.Success) {
+        when {
+        screen == AppScreen.OcrResult && ocrUiState is OcrUiState.Success -> {
             OcrResultScreen(
                 result = ocrUiState.result,
                 snackbarHostState = snackbarHostState,
-                onBack = { showOcrResult = false },
+                onBack = { screen = AppScreen.ScanResult },
                 onRecognizeAgain = {
-                    showOcrResult = false
+                    screen = AppScreen.ScanResult
                     onRecognizeText()
                 },
                 onClearRecognizedText = {
-                    showOcrResult = false
+                    screen = AppScreen.ScanResult
                     onClearRecognizedText()
                 },
                 onCopyText = { text ->
@@ -93,13 +95,25 @@ fun PageHarborApp(
                     }
                 },
             )
-        } else HomeScreen(
-            snackbarHostState = snackbarHostState,
-            scannerSpikeState = scannerSpikeState,
+        }
+        screen == AppScreen.ScanResult && scannerSpikeState is ScannerSpikeState.ResultSummary -> ScanResultScreen(
+            result = scannerSpikeState,
             pdfSaveState = pdfSaveState,
             pdfShareState = pdfShareState,
             pageExportState = pageExportState,
             ocrUiState = ocrUiState,
+            onBack = { screen = AppScreen.Home },
+            onSavePdf = onSavePdf,
+            onSharePdf = onSharePdf,
+            onExportPages = onExportPages,
+            onRecognizeText = onRecognizeText,
+            onViewRecognizedText = { screen = AppScreen.OcrResult },
+            onScanAgain = onScanDocument,
+            onDiscard = { screen = AppScreen.Home; onClearScanResult() },
+        )
+        else -> HomeScreen(
+            snackbarHostState = snackbarHostState,
+            scannerSpikeState = scannerSpikeState,
             showDevelopmentStatus = BuildConfig.DEBUG,
             versionName = BuildConfig.VERSION_NAME,
             versionCode = BuildConfig.VERSION_CODE,
@@ -109,15 +123,7 @@ fun PageHarborApp(
             onScanDocument = {
                 onScanDocument()
             },
-            onSavePdf = onSavePdf,
-            onSharePdf = onSharePdf,
-            onExportPages = onExportPages,
-            onRecognizeText = onRecognizeText,
-            onViewRecognizedText = { showOcrResult = true },
-            onClearRecognizedText = {
-                showOcrResult = false
-                onClearRecognizedText()
-            },
+            onViewScanResult = { screen = AppScreen.ScanResult },
             onPrivacyInfo = {
                 showPrivacyInfo = true
             },
@@ -131,11 +137,12 @@ fun PageHarborApp(
                 showAbout = false
             },
             onViewSourceCode = onViewSourceCode,
-            onClearScanResult = onClearScanResult,
         )
+        }
 
         LaunchedEffect(scannerSpikeState) {
             when (scannerSpikeState) {
+                is ScannerSpikeState.ResultSummary -> screen = AppScreen.ScanResult
                 ScannerSpikeState.Cancelled -> {
                     snackbarHostState.showSnackbar(scanCancelledMessage)
                 }
@@ -146,7 +153,6 @@ fun PageHarborApp(
 
                 ScannerSpikeState.Idle,
                 ScannerSpikeState.Preparing,
-                is ScannerSpikeState.ResultSummary,
                 -> Unit
             }
         }
@@ -215,3 +221,5 @@ fun PageHarborApp(
         }
     }
 }
+
+private enum class AppScreen { Home, ScanResult, OcrResult }

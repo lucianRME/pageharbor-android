@@ -50,10 +50,6 @@ import org.synapseworks.pageharbor.ocr.textFoundPageCount
 fun HomeScreen(
     snackbarHostState: SnackbarHostState,
     scannerSpikeState: ScannerSpikeState,
-    pdfSaveState: PdfSaveState,
-    pdfShareState: PdfShareState,
-    pageExportState: PageExportState,
-    ocrUiState: OcrUiState,
     showDevelopmentStatus: Boolean,
     versionName: String,
     versionCode: Int,
@@ -61,18 +57,12 @@ fun HomeScreen(
     showPrivacyInfo: Boolean,
     showAbout: Boolean,
     onScanDocument: () -> Unit,
-    onSavePdf: () -> Unit,
-    onSharePdf: () -> Unit,
-    onExportPages: () -> Unit,
-    onRecognizeText: () -> Unit,
-    onViewRecognizedText: () -> Unit,
-    onClearRecognizedText: () -> Unit,
+    onViewScanResult: () -> Unit,
     onPrivacyInfo: () -> Unit,
     onDismissPrivacyInfo: () -> Unit,
     onAbout: () -> Unit,
     onDismissAbout: () -> Unit,
     onViewSourceCode: () -> Unit,
-    onClearScanResult: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -105,15 +95,6 @@ fun HomeScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                         textAlign = TextAlign.Center,
                     )
-                    if (showDevelopmentStatus) {
-                        Text(
-                            modifier = Modifier.padding(top = 8.dp),
-                            text = stringResource(R.string.home_status),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                        )
-                    }
                     Text(
                         modifier = Modifier.padding(top = 32.dp),
                         text = stringResource(R.string.home_headline),
@@ -147,21 +128,9 @@ fun HomeScreen(
                         }
 
                         is ScannerSpikeState.ResultSummary -> {
-                            ScanResultSummary(
-                                modifier = Modifier.padding(top = 24.dp),
-                                resultSummary = scannerSpikeState,
-                                pdfSaveState = pdfSaveState,
-                                pdfShareState = pdfShareState,
-                                pageExportState = pageExportState,
-                                ocrUiState = ocrUiState,
-                                onSavePdf = onSavePdf,
-                                onSharePdf = onSharePdf,
-                                onExportPages = onExportPages,
-                                onRecognizeText = onRecognizeText,
-                                onViewRecognizedText = onViewRecognizedText,
-                                onClearRecognizedText = onClearRecognizedText,
-                                onClearScanResult = onClearScanResult,
-                            )
+                            TextButton(onClick = onViewScanResult) {
+                                Text(text = stringResource(R.string.home_view_scan_result))
+                            }
                         }
 
                         ScannerSpikeState.Idle,
