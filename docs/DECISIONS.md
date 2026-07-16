@@ -86,3 +86,14 @@ Physical-device validation showed that ML Kit can return a PDF URI that PageHarb
 
 Consequences:
 The FileProvider exposes only the `shared-pdfs` cache directory. Partial copies are deleted after preparation failures. Completed copies are eligible for operating-system cache eviction and PageHarbor removes copies at least 24 hours old when the app starts. No storage permission, network access, or re-encoding is introduced.
+
+## ADR-007: Future OCR Engine Direction
+
+Decision:
+If PageHarbor implements OCR after separate approval and validation, use the bundled Latin-script variant of Google ML Kit Text Recognition v2 as the initial engine. Limit the first language set to English, German, and Romanian. OCR is optional and user initiated: scanning, PDF save, PDF share, and JPEG export must work without it. Treat ML Kit Document Scanner as scan acquisition and scanner editing only; it does not expose a recognized-text OCR result.
+
+Rationale:
+The bundled Latin model is available without a first-use model download, supports the target languages, returns structured text with geometry and confidence, and has a maintained Android API. This provides the lowest integration and native-maintenance burden while keeping recognition of scanned pages on the device. It is a pragmatic choice despite the project preference for open source: ML Kit is proprietary. Tesseract remains the planned reconsideration path if fully open-source engine ownership becomes more important than the added NDK/JNI, model, and tuning burden.
+
+Consequences:
+This is an architecture direction, not approval to add a dependency, implement OCR, alter scanning, or alter export. OCR output is sensitive document content: it must stay local to the active session, remain in memory by default rather than be retained permanently, never be logged or sent to a backend, and any temporary artifacts require explicit cleanup. Copyable text is a separate feature. Searchable-PDF generation requires a separate decision and spike before PageHarbor-owned text-layer PDF generation and validation. PageHarbor will not recreate crop, rotate, filters, deletion, or reordering that ML Kit already provides in the scanner flow. Use platform capabilities where they are strong; build only what adds distinct user value. No claim of absolute offline operation is permitted until physical-device validation verifies the selected dependency's real install and runtime behaviour.

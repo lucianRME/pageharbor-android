@@ -10,6 +10,7 @@ PageHarbor is in early development. This roadmap is public-facing and intentiona
 - Home screen and privacy messaging.
 - Branding and design system.
 - ML Kit technical spike integration.
+- ML Kit scanner integration, including multi-page scanning and its built-in crop, rotate, filters, deletion, and reordering experience.
 - `v0.2.0-dev` export milestone:
   - Save PDF through Android Storage Access Framework.
   - Share PDF through the Android share sheet.
@@ -20,19 +21,31 @@ Document scanning, PDF save, PDF share, and JPEG page export have been validated
 
 ## In Progress
 
-### `v0.3.0-dev` — Review Experience
+### `v0.3.0-dev` — Offline OCR Foundation
 
 Planned targets:
 
-- Preview scanned pages.
-- Show page count and ordering.
-- Remove a page where technically supported.
-- Reorder pages where technically supported.
-- Rotate pages where technically supported.
-- Rescan or return to the scanner where technically practical.
-- Ensure reviewed content is what gets saved, shared, and exported.
+- Add bundled ML Kit Text Recognition v2 Latin after dependency and privacy validation.
+- Introduce a narrow OCR integration boundary and result model.
+- Recognize text from scanned JPEG pages and combine it in page order.
+- Expose a plain-text preview and allow explicit copying of recognized text.
+- Validate English, German, and Romanian recognition.
+- Verify OCR operation without a PageHarbor network permission and benchmark representative sample documents.
+- Preserve the scan, PDF save, PDF share, and JPEG export flows.
 
-ML Kit already provides some review behavior inside its scanner UI. The exact scope of a PageHarbor-owned review experience still requires technical validation. PageHarbor does not currently own or edit page image content after ML Kit returns it.
+OCR is optional: it must run only after explicit user action and must never block scanning or export. OCR results remain in memory unless the user explicitly copies or exports them. PageHarbor will not introduce cloud OCR or a proprietary backend.
+
+PageHarbor intentionally relies on ML Kit for scanner editing capabilities rather than duplicating crop, rotate, filters, page deletion, or reordering. Use platform capabilities where they are strong. Build only what adds distinct user value.
+
+Implementation sequence:
+
+1. Dependency and privacy validation.
+2. OCR engine adapter and result model.
+3. Single-page OCR.
+4. Multi-page OCR.
+5. Copy-text UX.
+6. Multilingual benchmark.
+7. Physical-device regression validation.
 
 ## Planned MVP
 
@@ -45,7 +58,6 @@ ML Kit already provides some review behavior inside its scanner UI. The exact sc
 
 These are non-committed possibilities:
 
-- OCR.
 - Searchable PDFs.
 - Document organization.
 - Additional privacy-preserving features.
@@ -59,3 +71,6 @@ These are non-committed possibilities:
 - Analytics.
 - Subscriptions.
 - Internal permanent document library.
+- Searchable PDF in `v0.3.0-dev`.
+- Smart naming in `v0.3.0-dev`.
+- Document search or a library in `v0.3.0-dev`.

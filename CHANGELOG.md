@@ -8,7 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- Began the `0.3.0-dev` development cycle focused on the review experience
+- Began the `0.3.0-dev` Offline OCR Foundation cycle
+- Completed OCR technology research and selected bundled ML Kit Text Recognition v2 Latin for the initial OCR implementation
+- Retained Tesseract as a documented future OCR alternative
+- Clarified that scanner editing remains provided by ML Kit
+- Added a dependency-free OCR engine boundary and in-memory result model
 
 ## [0.2.0-dev]
 

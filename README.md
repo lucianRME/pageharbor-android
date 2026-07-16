@@ -6,7 +6,7 @@ PageHarbor is an open-source, privacy-first Android document scanner. The app is
 
 The latest completed milestone is `v0.2.0-dev`. Scanning, PDF save, PDF share, and JPEG page export are implemented and physically validated on Samsung Android 16.
 
-The current development version is `v0.3.0-dev`, focused on the Review Experience. The exact PageHarbor-owned review scope remains subject to technical validation because ML Kit already provides some review behavior inside its scanner UI.
+The current development version is `v0.3.0-dev`, focused on the Offline OCR Foundation. ML Kit's scanner already provides crop, rotate, filters, and multi-page review; PageHarbor focuses on post-scan value: export, sharing, OCR, searchable PDF, and privacy. OCR is not implemented yet.
 
 See [ROADMAP.md](ROADMAP.md) for the current project roadmap.
 
