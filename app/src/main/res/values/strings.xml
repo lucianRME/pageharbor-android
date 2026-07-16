@@ -18,6 +18,9 @@
     <string name="ocr_recognize_action">Recognize Text</string>
     <string name="ocr_recognize_again_action">Recognize Again</string>
     <string name="ocr_view_action">View recognized text</string>
+    <string name="ocr_copy_action">Copy text</string>
+    <string name="ocr_copy_content_description">Copy recognized text to clipboard</string>
+    <string name="ocr_copied_message">Text copied</string>
     <string name="ocr_back_action">Back</string>
     <string name="ocr_back_content_description">Back to scan result</string>
     <string name="ocr_recognizing_progress">Recognizing text…</string>

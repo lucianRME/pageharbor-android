@@ -2,6 +2,7 @@ package org.synapseworks.pageharbor.ocr
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -28,6 +29,62 @@ class OcrUiStateTest {
         assertEquals(
             "One page",
             formatOcrPreview(result, pageHeading = { "Page $it" }, emptyPageText = "Empty"),
+        )
+    }
+
+    @Test
+    fun emptyResultHasNoCopyablePayload() {
+        val result = OcrResult(listOf(OcrPageResult(pageIndex = 0, text = "")))
+
+        assertNull(copyableOcrPreview(result, { "Page $it" }, "No text recognized on this page."))
+    }
+
+    @Test
+    fun allBlankPagesHaveNoCopyablePayload() {
+        val result = OcrResult(
+            listOf(
+                OcrPageResult(pageIndex = 0, text = "  "),
+                OcrPageResult(pageIndex = 1, text = "\n\t"),
+            ),
+        )
+
+        assertNull(copyableOcrPreview(result, { "Page $it" }, "Empty"))
+    }
+
+    @Test
+    fun copiedTextForMultiplePagesUsesTheSameOrderedHeadingsAsPreview() {
+        val result = OcrResult(
+            listOf(
+                OcrPageResult(pageIndex = 0, text = "First"),
+                OcrPageResult(pageIndex = 1, text = "Second"),
+            ),
+        )
+
+        assertEquals(
+            "Page 1\nFirst\n\nPage 2\nSecond",
+            copyableOcrPreview(result, { "Page $it" }, "Empty"),
+        )
+    }
+
+    @Test
+    fun copiedSinglePageTextHasNoHeadingOrTrailingBlankLines() {
+        val result = OcrResult(listOf(OcrPageResult(pageIndex = 0, text = "One page\n\n")))
+
+        assertEquals("One page", copyableOcrPreview(result, { "Page $it" }, "Empty"))
+    }
+
+    @Test
+    fun partialSuccessCopiesTheEstablishedPreviewPayload() {
+        val result = OcrResult(
+            listOf(
+                OcrPageResult(pageIndex = 0, text = "Readable"),
+                OcrPageResult(pageIndex = 1, text = "", error = OcrPageError.IMAGE_UNREADABLE),
+            ),
+        )
+
+        assertEquals(
+            "Page 1\nReadable\n\nPage 2\nEmpty",
+            copyableOcrPreview(result, { "Page $it" }, "Empty"),
         )
     }
 

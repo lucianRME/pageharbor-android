@@ -656,6 +656,9 @@ class HomeScreenTest {
 
         composeTestRule.onNodeWithText("View recognized text").performScrollTo().performClick()
         composeTestRule.onNodeWithText("No text was recognized in this scan.").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Copy text").assertCountEquals(0)
+        composeTestRule.onNodeWithText("Recognize Again").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Clear recognized text").assertIsDisplayed()
     }
 
     @Test
@@ -680,6 +683,7 @@ class HomeScreenTest {
 
         composeTestRule.onNodeWithText("View recognized text").performScrollTo().performClick()
         composeTestRule.onNodeWithText("Readable page", substring = true).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Copy text").assertIsDisplayed()
         composeTestRule.onNodeWithText("Some pages could not be read.")
             .assertIsDisplayed()
     }
@@ -704,6 +708,26 @@ class HomeScreenTest {
         composeTestRule.onNodeWithText("Save PDF").assertIsEnabled()
         composeTestRule.onNodeWithText("Share PDF").assertIsEnabled()
         composeTestRule.onNodeWithText("Export Pages").assertIsEnabled()
+    }
+
+    @Test
+    fun copyTextInvokesCallbackAndShowsSnackbar() {
+        var copiedText: String? = null
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = scanSummary(jpegPageCount = 1),
+                ocrUiState = OcrUiState.Success(
+                    OcrResult(listOf(OcrPageResult(pageIndex = 0, text = "Copy me"))),
+                ),
+                onCopyRecognizedText = { copiedText = it },
+            )
+        }
+
+        composeTestRule.onNodeWithText("View recognized text").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("Copy text").performClick()
+
+        assertEquals("Copy me", copiedText)
+        composeTestRule.onNodeWithText("Text copied").assertIsDisplayed()
     }
 
     private fun scanSummary(jpegPageCount: Int) = ScannerSpikeState.ResultSummary(

@@ -8,6 +8,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -21,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.synapseworks.pageharbor.R
 import org.synapseworks.pageharbor.ocr.OcrResult
+import org.synapseworks.pageharbor.ocr.copyableOcrPreview
 import org.synapseworks.pageharbor.ocr.failedPageCount
 import org.synapseworks.pageharbor.ocr.formatOcrPreview
 import org.synapseworks.pageharbor.ocr.textFoundPageCount
@@ -29,9 +32,11 @@ import org.synapseworks.pageharbor.ocr.textFoundPageCount
 @OptIn(ExperimentalMaterial3Api::class)
 fun OcrResultScreen(
     result: OcrResult,
+    snackbarHostState: SnackbarHostState,
     onBack: () -> Unit,
     onRecognizeAgain: () -> Unit,
     onClearRecognizedText: () -> Unit,
+    onCopyText: (String) -> Unit,
 ) {
     val textFoundPageCount = result.textFoundPageCount()
     val context = LocalContext.current
@@ -40,7 +45,13 @@ fun OcrResultScreen(
         pageHeading = { context.getString(R.string.ocr_preview_page_heading, it) },
         emptyPageText = stringResource(R.string.ocr_preview_empty_page),
     )
+    val copyPayload = copyableOcrPreview(
+        result = result,
+        pageHeading = { context.getString(R.string.ocr_preview_page_heading, it) },
+        emptyPageText = stringResource(R.string.ocr_preview_empty_page),
+    )
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.ocr_result_heading)) },
@@ -97,6 +108,14 @@ fun OcrResultScreen(
                 }
             }
             androidx.compose.foundation.layout.Row {
+                if (copyPayload != null) {
+                    TextButton(
+                        modifier = Modifier.semantics {
+                            contentDescription = context.getString(R.string.ocr_copy_content_description)
+                        },
+                        onClick = { onCopyText(copyPayload) },
+                    ) { Text(stringResource(R.string.ocr_copy_action)) }
+                }
                 TextButton(onClick = onRecognizeAgain) { Text(stringResource(R.string.ocr_recognize_again_action)) }
                 TextButton(onClick = onClearRecognizedText) { Text(stringResource(R.string.ocr_clear_action)) }
             }

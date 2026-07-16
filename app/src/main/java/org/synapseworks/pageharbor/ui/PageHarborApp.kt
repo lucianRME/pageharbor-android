@@ -6,8 +6,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
 import org.synapseworks.pageharbor.BuildConfig
 import org.synapseworks.pageharbor.R
 import org.synapseworks.pageharbor.document.PageExportResult
@@ -35,12 +38,16 @@ fun PageHarborApp(
     onExportPages: () -> Unit = {},
     onRecognizeText: () -> Unit = {},
     onClearRecognizedText: () -> Unit = {},
+    onCopyRecognizedText: ((String) -> Unit)? = null,
     onViewSourceCode: () -> Unit = {},
     onClearScanResult: () -> Unit = {},
 ) {
     PageHarborTheme {
         var showOcrResult by remember { mutableStateOf(false) }
         val snackbarHostState = remember { SnackbarHostState() }
+        val coroutineScope = rememberCoroutineScope()
+        val context = LocalContext.current
+        val copiedMessage = stringResource(R.string.ocr_copied_message)
         var showPrivacyInfo by remember { mutableStateOf(false) }
         var showAbout by remember { mutableStateOf(false) }
         val scanCancelledMessage = stringResource(R.string.home_scan_cancelled)
@@ -60,6 +67,7 @@ fun PageHarborApp(
         if (showOcrResult && ocrUiState is OcrUiState.Success) {
             OcrResultScreen(
                 result = ocrUiState.result,
+                snackbarHostState = snackbarHostState,
                 onBack = { showOcrResult = false },
                 onRecognizeAgain = {
                     showOcrResult = false
@@ -68,6 +76,21 @@ fun PageHarborApp(
                 onClearRecognizedText = {
                     showOcrResult = false
                     onClearRecognizedText()
+                },
+                onCopyText = { text ->
+                    val copied = if (onCopyRecognizedText != null) {
+                        onCopyRecognizedText(text)
+                        true
+                    } else {
+                        copyPlainTextToClipboard(
+                            context = context,
+                            label = context.getString(R.string.ocr_result_heading),
+                            text = text,
+                        )
+                    }
+                    if (copied) {
+                        coroutineScope.launch { snackbarHostState.showSnackbar(copiedMessage) }
+                    }
                 },
             )
         } else HomeScreen(

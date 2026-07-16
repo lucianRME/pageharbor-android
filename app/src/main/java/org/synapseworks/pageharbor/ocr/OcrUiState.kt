@@ -36,10 +36,26 @@ fun formatOcrPreview(
     result: OcrResult,
     pageHeading: (Int) -> String,
     emptyPageText: String,
-): String = if (result.pages.size == 1) {
-    result.pages.single().text.ifBlank { emptyPageText }
-} else {
-    result.pages.joinToString(separator = "\n\n") { page ->
-        "${pageHeading(page.pageIndex + 1)}\n${page.text.ifBlank { emptyPageText }}"
+): String = (
+    if (result.pages.size == 1) {
+        result.pages.single().text.ifBlank { emptyPageText }
+    } else {
+        result.pages.joinToString(separator = "\n\n") { page ->
+            "${pageHeading(page.pageIndex + 1)}\n${page.text.ifBlank { emptyPageText }}"
+        }
     }
+).trimEnd()
+
+/**
+ * Returns the existing preview payload only when OCR produced actual text.
+ * Page headings and empty-page wording are presentation-only and never make a result copyable.
+ */
+fun copyableOcrPreview(
+    result: OcrResult,
+    pageHeading: (Int) -> String,
+    emptyPageText: String,
+): String? = if (result.pages.any { it.text.isNotBlank() }) {
+    formatOcrPreview(result, pageHeading, emptyPageText)
+} else {
+    null
 }
