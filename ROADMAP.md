@@ -27,8 +27,8 @@ Planned targets:
 
 - Add bundled ML Kit Text Recognition v2 Latin after dependency and privacy validation. **Implemented:** the bundled, on-device Latin engine processes active-session JPEG pages sequentially and retains in-memory page indexes and failures.
 - Introduce a narrow OCR integration boundary and result model. **Implemented:** ML Kit types are confined to `MlKitOcrEngine`.
-- Recognize text from scanned JPEG pages and combine it in page order. **Implemented at the engine boundary; no UI calls it yet.**
-- Expose a plain-text preview and allow explicit copying of recognized text.
+- Recognize text from scanned JPEG pages and combine it in page order. **Implemented in the scan-result flow; physical scan-flow validation remains in progress.**
+- Expose a plain-text preview and allow explicit copying of recognized text. **Implemented:** an in-memory preview is available after explicit user action; copying remains pending.
 - Validate English, German, and Romanian recognition.
 - Verify OCR operation without a PageHarbor network permission and benchmark representative sample documents.
 - Preserve the scan, PDF save, PDF share, and JPEG export flows.

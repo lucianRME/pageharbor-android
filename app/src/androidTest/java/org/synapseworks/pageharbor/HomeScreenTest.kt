@@ -8,6 +8,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -16,6 +17,10 @@ import org.synapseworks.pageharbor.document.PageExportState
 import org.synapseworks.pageharbor.document.PdfSaveState
 import org.synapseworks.pageharbor.document.PdfShareState
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
+import org.synapseworks.pageharbor.ocr.OcrPageError
+import org.synapseworks.pageharbor.ocr.OcrPageResult
+import org.synapseworks.pageharbor.ocr.OcrResult
+import org.synapseworks.pageharbor.ocr.OcrUiState
 import org.synapseworks.pageharbor.ui.PageHarborApp
 
 class HomeScreenTest {
@@ -566,4 +571,143 @@ class HomeScreenTest {
 
         assertEquals(1, viewSourceClickCount)
     }
+
+    @Test
+    fun recognizeTextDoesNotAppearWhenJpegPagesAreMissing() {
+        composeTestRule.setContent {
+            PageHarborApp(scannerSpikeState = scanSummary(jpegPageCount = 0))
+        }
+        composeTestRule.onAllNodesWithText("Recognize Text").assertCountEquals(0)
+    }
+
+    @Test
+    fun recognizeTextAppearsWhenJpegPagesExist() {
+        composeTestRule.setContent {
+            PageHarborApp(scannerSpikeState = scanSummary(jpegPageCount = 1))
+        }
+        composeTestRule.onNodeWithText("Recognize Text").assertIsDisplayed()
+    }
+
+    @Test
+    fun recognizeTextInvokesCallback() {
+        var callCount = 0
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = scanSummary(jpegPageCount = 1),
+                onRecognizeText = { callCount += 1 },
+            )
+        }
+
+        composeTestRule.onNodeWithText("Recognize Text").performClick()
+
+        assertEquals(1, callCount)
+    }
+
+    @Test
+    fun recognizingStateDisablesOnlyRepeatedOcrAndShowsProgress() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = scanSummary(jpegPageCount = 1),
+                ocrUiState = OcrUiState.Recognizing,
+            )
+        }
+
+        composeTestRule.onNodeWithText("Recognize Text").assertIsNotEnabled()
+        composeTestRule.onNodeWithText("Recognizing text…").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Save PDF").assertIsEnabled()
+        composeTestRule.onNodeWithText("Share PDF").assertIsEnabled()
+        composeTestRule.onNodeWithText("Export Pages").assertIsEnabled()
+    }
+
+    @Test
+    fun ocrSuccessDisplaysOrderedSelectablePreview() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = scanSummary(jpegPageCount = 2),
+                ocrUiState = OcrUiState.Success(
+                    OcrResult(
+                        listOf(
+                            OcrPageResult(pageIndex = 0, text = "First page text"),
+                            OcrPageResult(pageIndex = 1, text = "Second page text"),
+                        ),
+                    ),
+                ),
+            )
+        }
+
+        composeTestRule.onNodeWithText("Recognized text").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Text found on 2 of 2 pages").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Page 1\nFirst page text\n\nPage 2\nSecond page text")
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun emptyOcrSuccessDisplaysSafeEmptyMessage() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = scanSummary(jpegPageCount = 1),
+                ocrUiState = OcrUiState.Success(
+                    OcrResult(listOf(OcrPageResult(pageIndex = 0, text = ""))),
+                ),
+            )
+        }
+
+        composeTestRule.onNodeWithText("No text was recognized in this scan.")
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun partialOcrSuccessKeepsTextAndShowsSafeWarning() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = scanSummary(jpegPageCount = 2),
+                ocrUiState = OcrUiState.Success(
+                    OcrResult(
+                        listOf(
+                            OcrPageResult(pageIndex = 0, text = "Readable page"),
+                            OcrPageResult(
+                                pageIndex = 1,
+                                text = "",
+                                error = OcrPageError.IMAGE_UNREADABLE,
+                            ),
+                        ),
+                    ),
+                ),
+            )
+        }
+
+        composeTestRule.onNodeWithText("Readable page", substring = true).performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Some pages could not be read.")
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun clearRecognizedTextPreservesExistingExportActions() {
+        var clearCallCount = 0
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = scanSummary(jpegPageCount = 1),
+                ocrUiState = OcrUiState.Success(
+                    OcrResult(listOf(OcrPageResult(pageIndex = 0, text = "Recognized"))),
+                ),
+                onClearRecognizedText = { clearCallCount += 1 },
+            )
+        }
+
+        composeTestRule.onNodeWithText("Clear recognized text").performScrollTo().performClick()
+
+        assertEquals(1, clearCallCount)
+        composeTestRule.onNodeWithText("Save PDF").assertIsEnabled()
+        composeTestRule.onNodeWithText("Share PDF").assertIsEnabled()
+        composeTestRule.onNodeWithText("Export Pages").assertIsEnabled()
+    }
+
+    private fun scanSummary(jpegPageCount: Int) = ScannerSpikeState.ResultSummary(
+        jpegPageCount = jpegPageCount,
+        hasPdf = true,
+        pdfPageCount = 1,
+    )
 }

@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Clarified that scanner editing remains provided by ML Kit
 - Added a dependency-free OCR engine boundary and in-memory result model
 - Bounded OCR JPEG decoding to a 2,800 px long edge and 7 MP per-page bitmap cap
+- Added user-initiated offline OCR with an in-memory recognized-text preview and safe partial or empty-result handling
 
 ## [0.2.0-dev]
 

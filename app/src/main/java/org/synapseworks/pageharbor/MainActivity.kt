@@ -20,6 +20,7 @@ import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStream
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.synapseworks.pageharbor.document.PageExportResult
@@ -41,18 +42,30 @@ import org.synapseworks.pageharbor.document.startPageExport
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
 import org.synapseworks.pageharbor.scanner.createScannerResultSummary
 import org.synapseworks.pageharbor.ui.PageHarborApp
+import org.synapseworks.pageharbor.ocr.MlKitOcrEngine
+import org.synapseworks.pageharbor.ocr.OcrEngine
+import org.synapseworks.pageharbor.ocr.OcrPage
+import org.synapseworks.pageharbor.ocr.OcrUiError
+import org.synapseworks.pageharbor.ocr.OcrUiState
+import org.synapseworks.pageharbor.ocr.canStartOcr
+import org.synapseworks.pageharbor.ocr.clearedOcrState
+import org.synapseworks.pageharbor.ocr.ocrStateAfterResult
 
 class MainActivity : ComponentActivity() {
     private var scannerSpikeState: ScannerSpikeState by mutableStateOf(ScannerSpikeState.Idle)
     private var pdfSaveState: PdfSaveState by mutableStateOf(PdfSaveState.Idle)
     private var pdfShareState: PdfShareState by mutableStateOf(PdfShareState.Idle)
     private var pageExportState: PageExportState by mutableStateOf(PageExportState.Idle)
+    private var ocrUiState: OcrUiState by mutableStateOf(OcrUiState.Idle)
     private var scannedPdfUri: Uri? = null
     private var scannedPageUris: List<Uri> = emptyList()
+    private val ocrEngine: OcrEngine = MlKitOcrEngine()
+    private var ocrJob: Job? = null
 
     private val scanLauncher = registerForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult(),
     ) { result ->
+        clearRecognizedText()
         scannedPdfUri = null
         scannedPageUris = emptyList()
         pdfSaveState = PdfSaveState.Idle
@@ -122,12 +135,16 @@ class MainActivity : ComponentActivity() {
                 pdfSaveState = pdfSaveState,
                 pdfShareState = pdfShareState,
                 pageExportState = pageExportState,
+                ocrUiState = ocrUiState,
                 onScanDocument = ::launchDocumentScanner,
                 onSavePdf = ::choosePdfDestination,
                 onSharePdf = ::sharePdf,
                 onExportPages = ::exportPages,
+                onRecognizeText = ::recognizeText,
+                onClearRecognizedText = ::clearRecognizedText,
                 onViewSourceCode = ::openSourceCode,
                 onClearScanResult = {
+                    clearRecognizedText()
                     scannedPdfUri = null
                     scannedPageUris = emptyList()
                     pdfSaveState = PdfSaveState.Idle
@@ -142,6 +159,7 @@ class MainActivity : ComponentActivity() {
     private fun launchDocumentScanner() {
         if (scannerSpikeState == ScannerSpikeState.Preparing) return
 
+        clearRecognizedText()
         scannerSpikeState = ScannerSpikeState.Preparing
 
         val options = GmsDocumentScannerOptions.Builder()
@@ -164,6 +182,41 @@ class MainActivity : ComponentActivity() {
             .addOnFailureListener {
                 scannerSpikeState = ScannerSpikeState.Error
             }
+    }
+
+    private fun recognizeText() {
+        if (!canStartOcr(ocrUiState)) return
+
+        val pages = scannedPageUris.map { pageUri ->
+            OcrPage {
+                contentResolver.openInputStream(pageUri) ?: throw FileNotFoundException()
+            }
+        }
+        if (pages.isEmpty()) {
+            ocrUiState = OcrUiState.Error(OcrUiError.NO_PAGES)
+            return
+        }
+
+        ocrUiState = OcrUiState.Recognizing
+        ocrJob = lifecycleScope.launch {
+            val result = try {
+                withContext(Dispatchers.IO) {
+                    ocrEngine.recognize(pages)
+                }
+            } catch (_: kotlinx.coroutines.CancellationException) {
+                return@launch
+            } catch (_: Exception) {
+                ocrUiState = OcrUiState.Error(OcrUiError.UNEXPECTED_FAILURE)
+                return@launch
+            }
+            ocrUiState = ocrStateAfterResult(result)
+        }
+    }
+
+    private fun clearRecognizedText() {
+        ocrJob?.cancel()
+        ocrJob = null
+        ocrUiState = clearedOcrState()
     }
 
     private fun choosePdfDestination() {

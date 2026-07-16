@@ -17,6 +17,7 @@ import org.synapseworks.pageharbor.document.PdfSaveState
 import org.synapseworks.pageharbor.document.PdfShareError
 import org.synapseworks.pageharbor.document.PdfShareState
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
+import org.synapseworks.pageharbor.ocr.OcrUiState
 import org.synapseworks.pageharbor.ui.home.HomeScreen
 import org.synapseworks.pageharbor.ui.theme.PageHarborTheme
 
@@ -26,10 +27,13 @@ fun PageHarborApp(
     pdfSaveState: PdfSaveState = PdfSaveState.Idle,
     pdfShareState: PdfShareState = PdfShareState.Idle,
     pageExportState: PageExportState = PageExportState.Idle,
+    ocrUiState: OcrUiState = OcrUiState.Idle,
     onScanDocument: () -> Unit = {},
     onSavePdf: () -> Unit = {},
     onSharePdf: () -> Unit = {},
     onExportPages: () -> Unit = {},
+    onRecognizeText: () -> Unit = {},
+    onClearRecognizedText: () -> Unit = {},
     onViewSourceCode: () -> Unit = {},
     onClearScanResult: () -> Unit = {},
 ) {
@@ -57,6 +61,7 @@ fun PageHarborApp(
             pdfSaveState = pdfSaveState,
             pdfShareState = pdfShareState,
             pageExportState = pageExportState,
+            ocrUiState = ocrUiState,
             showDevelopmentStatus = BuildConfig.DEBUG,
             versionName = BuildConfig.VERSION_NAME,
             versionCode = BuildConfig.VERSION_CODE,
@@ -69,6 +74,8 @@ fun PageHarborApp(
             onSavePdf = onSavePdf,
             onSharePdf = onSharePdf,
             onExportPages = onExportPages,
+            onRecognizeText = onRecognizeText,
+            onClearRecognizedText = onClearRecognizedText,
             onPrivacyInfo = {
                 showPrivacyInfo = true
             },

@@ -6,10 +6,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -23,9 +25,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.synapseworks.pageharbor.R
@@ -33,6 +39,12 @@ import org.synapseworks.pageharbor.document.PageExportState
 import org.synapseworks.pageharbor.document.PdfSaveState
 import org.synapseworks.pageharbor.document.PdfShareState
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
+import org.synapseworks.pageharbor.ocr.OcrUiError
+import org.synapseworks.pageharbor.ocr.OcrUiState
+import org.synapseworks.pageharbor.ocr.canStartOcr
+import org.synapseworks.pageharbor.ocr.failedPageCount
+import org.synapseworks.pageharbor.ocr.formatOcrPreview
+import org.synapseworks.pageharbor.ocr.textFoundPageCount
 
 @Composable
 fun HomeScreen(
@@ -41,6 +53,7 @@ fun HomeScreen(
     pdfSaveState: PdfSaveState,
     pdfShareState: PdfShareState,
     pageExportState: PageExportState,
+    ocrUiState: OcrUiState,
     showDevelopmentStatus: Boolean,
     versionName: String,
     versionCode: Int,
@@ -51,6 +64,8 @@ fun HomeScreen(
     onSavePdf: () -> Unit,
     onSharePdf: () -> Unit,
     onExportPages: () -> Unit,
+    onRecognizeText: () -> Unit,
+    onClearRecognizedText: () -> Unit,
     onPrivacyInfo: () -> Unit,
     onDismissPrivacyInfo: () -> Unit,
     onAbout: () -> Unit,
@@ -137,9 +152,12 @@ fun HomeScreen(
                                 pdfSaveState = pdfSaveState,
                                 pdfShareState = pdfShareState,
                                 pageExportState = pageExportState,
+                                ocrUiState = ocrUiState,
                                 onSavePdf = onSavePdf,
                                 onSharePdf = onSharePdf,
                                 onExportPages = onExportPages,
+                                onRecognizeText = onRecognizeText,
+                                onClearRecognizedText = onClearRecognizedText,
                                 onClearScanResult = onClearScanResult,
                             )
                         }
@@ -208,9 +226,12 @@ private fun ScanResultSummary(
     pdfSaveState: PdfSaveState,
     pdfShareState: PdfShareState,
     pageExportState: PageExportState,
+    ocrUiState: OcrUiState,
     onSavePdf: () -> Unit,
     onSharePdf: () -> Unit,
     onExportPages: () -> Unit,
+    onRecognizeText: () -> Unit,
+    onClearRecognizedText: () -> Unit,
     onClearScanResult: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -296,6 +317,18 @@ private fun ScanResultSummary(
                 }
             }
         }
+        if (resultSummary.jpegPageCount > 0) {
+            OutlinedButton(
+                enabled = canStartOcr(ocrUiState),
+                onClick = onRecognizeText,
+            ) {
+                Text(text = stringResource(R.string.ocr_recognize_action))
+            }
+        }
+        OcrResultSection(
+            state = ocrUiState,
+            onClearRecognizedText = onClearRecognizedText,
+        )
         if (saveInProgress) {
             Row(
                 modifier = Modifier.padding(top = 8.dp),
@@ -381,6 +414,116 @@ private fun ScanResultSummary(
             onClick = onClearScanResult,
         ) {
             Text(text = stringResource(R.string.home_clear_scan_result))
+        }
+    }
+}
+
+@Composable
+private fun OcrResultSection(
+    state: OcrUiState,
+    onClearRecognizedText: () -> Unit,
+) {
+    when (state) {
+        OcrUiState.Idle -> Unit
+
+        OcrUiState.Recognizing -> {
+            Row(
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .semantics { liveRegion = LiveRegionMode.Polite },
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                Text(
+                    text = stringResource(R.string.ocr_recognizing_progress),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+            }
+        }
+
+        is OcrUiState.Error -> {
+            val message = when (state.reason) {
+                OcrUiError.NO_PAGES -> stringResource(R.string.ocr_error_no_pages)
+                OcrUiError.ALL_PAGES_FAILED -> stringResource(R.string.ocr_error_all_pages_failed)
+                OcrUiError.UNEXPECTED_FAILURE -> stringResource(R.string.ocr_error_unexpected)
+            }
+            Text(
+                modifier = Modifier.padding(top = 8.dp),
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center,
+            )
+        }
+
+        is OcrUiState.Success -> {
+            val result = state.result
+            val textFoundPageCount = result.textFoundPageCount()
+            val context = LocalContext.current
+            val preview = formatOcrPreview(
+                result = result,
+                pageHeading = { pageNumber ->
+                    context.getString(R.string.ocr_preview_page_heading, pageNumber)
+                },
+                emptyPageText = stringResource(R.string.ocr_preview_empty_page),
+            )
+            Text(
+                modifier = Modifier.padding(top = 8.dp),
+                text = stringResource(R.string.ocr_result_heading),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = stringResource(
+                    R.string.ocr_page_summary,
+                    textFoundPageCount,
+                    result.pages.size,
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center,
+            )
+            if (result.failedPageCount() > 0) {
+                Text(
+                    text = stringResource(R.string.ocr_partial_failure_warning),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                )
+            }
+            if (textFoundPageCount == 0) {
+                Text(
+                    text = stringResource(R.string.ocr_no_text),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    textAlign = TextAlign.Center,
+                )
+            } else {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 280.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = MaterialTheme.shapes.small,
+                ) {
+                    SelectionContainer {
+                        Text(
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .verticalScroll(rememberScrollState()),
+                            text = preview,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            OutlinedButton(onClick = onClearRecognizedText) {
+                Text(text = stringResource(R.string.ocr_clear_action))
+            }
         }
     }
 }
