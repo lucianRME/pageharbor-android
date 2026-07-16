@@ -65,6 +65,7 @@ fun HomeScreen(
     onSharePdf: () -> Unit,
     onExportPages: () -> Unit,
     onRecognizeText: () -> Unit,
+    onViewRecognizedText: () -> Unit,
     onClearRecognizedText: () -> Unit,
     onPrivacyInfo: () -> Unit,
     onDismissPrivacyInfo: () -> Unit,
@@ -157,6 +158,7 @@ fun HomeScreen(
                                 onSharePdf = onSharePdf,
                                 onExportPages = onExportPages,
                                 onRecognizeText = onRecognizeText,
+                                onViewRecognizedText = onViewRecognizedText,
                                 onClearRecognizedText = onClearRecognizedText,
                                 onClearScanResult = onClearScanResult,
                             )
@@ -231,6 +233,7 @@ private fun ScanResultSummary(
     onSharePdf: () -> Unit,
     onExportPages: () -> Unit,
     onRecognizeText: () -> Unit,
+    onViewRecognizedText: () -> Unit,
     onClearRecognizedText: () -> Unit,
     onClearScanResult: () -> Unit,
     modifier: Modifier = Modifier,
@@ -317,18 +320,6 @@ private fun ScanResultSummary(
                 }
             }
         }
-        if (resultSummary.jpegPageCount > 0) {
-            OutlinedButton(
-                enabled = canStartOcr(ocrUiState),
-                onClick = onRecognizeText,
-            ) {
-                Text(text = stringResource(R.string.ocr_recognize_action))
-            }
-        }
-        OcrResultSection(
-            state = ocrUiState,
-            onClearRecognizedText = onClearRecognizedText,
-        )
         if (saveInProgress) {
             Row(
                 modifier = Modifier.padding(top = 8.dp),
@@ -409,6 +400,27 @@ private fun ScanResultSummary(
                 textAlign = TextAlign.Center,
             )
         }
+        if (resultSummary.jpegPageCount > 0) {
+            OutlinedButton(
+                enabled = canStartOcr(ocrUiState),
+                onClick = onRecognizeText,
+            ) {
+                Text(
+                    text = stringResource(
+                        if (ocrUiState is OcrUiState.Success) {
+                            R.string.ocr_recognize_again_action
+                        } else {
+                            R.string.ocr_recognize_action
+                        },
+                    ),
+                )
+            }
+        }
+        OcrResultSection(
+            state = ocrUiState,
+            onViewRecognizedText = onViewRecognizedText,
+            onClearRecognizedText = onClearRecognizedText,
+        )
         OutlinedButton(
             modifier = Modifier.padding(top = 8.dp),
             onClick = onClearScanResult,
@@ -421,6 +433,7 @@ private fun ScanResultSummary(
 @Composable
 private fun OcrResultSection(
     state: OcrUiState,
+    onViewRecognizedText: () -> Unit,
     onClearRecognizedText: () -> Unit,
 ) {
     when (state) {
@@ -459,70 +472,8 @@ private fun OcrResultSection(
         }
 
         is OcrUiState.Success -> {
-            val result = state.result
-            val textFoundPageCount = result.textFoundPageCount()
-            val context = LocalContext.current
-            val preview = formatOcrPreview(
-                result = result,
-                pageHeading = { pageNumber ->
-                    context.getString(R.string.ocr_preview_page_heading, pageNumber)
-                },
-                emptyPageText = stringResource(R.string.ocr_preview_empty_page),
-            )
-            Text(
-                modifier = Modifier.padding(top = 8.dp),
-                text = stringResource(R.string.ocr_result_heading),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                text = stringResource(
-                    R.string.ocr_page_summary,
-                    textFoundPageCount,
-                    result.pages.size,
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center,
-            )
-            if (result.failedPageCount() > 0) {
-                Text(
-                    text = stringResource(R.string.ocr_partial_failure_warning),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center,
-                )
-            }
-            if (textFoundPageCount == 0) {
-                Text(
-                    text = stringResource(R.string.ocr_no_text),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    textAlign = TextAlign.Center,
-                )
-            } else {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 280.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = MaterialTheme.shapes.small,
-                ) {
-                    SelectionContainer {
-                        Text(
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .verticalScroll(rememberScrollState()),
-                            text = preview,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-            OutlinedButton(onClick = onClearRecognizedText) {
-                Text(text = stringResource(R.string.ocr_clear_action))
+            OutlinedButton(onClick = onViewRecognizedText) {
+                Text(text = stringResource(R.string.ocr_view_action))
             }
         }
     }

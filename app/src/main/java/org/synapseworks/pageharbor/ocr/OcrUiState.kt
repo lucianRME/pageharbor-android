@@ -36,6 +36,10 @@ fun formatOcrPreview(
     result: OcrResult,
     pageHeading: (Int) -> String,
     emptyPageText: String,
-): String = result.pages.joinToString(separator = "\n\n") { page ->
-    "${pageHeading(page.pageIndex + 1)}\n${page.text.ifBlank { emptyPageText }}"
+): String = if (result.pages.size == 1) {
+    result.pages.single().text.ifBlank { emptyPageText }
+} else {
+    result.pages.joinToString(separator = "\n\n") { page ->
+        "${pageHeading(page.pageIndex + 1)}\n${page.text.ifBlank { emptyPageText }}"
+    }
 }

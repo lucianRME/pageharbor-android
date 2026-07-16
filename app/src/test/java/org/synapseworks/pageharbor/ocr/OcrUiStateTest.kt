@@ -22,6 +22,16 @@ class OcrUiStateTest {
     }
 
     @Test
+    fun singlePagePreviewOmitsPageHeadingAndTrailingSeparator() {
+        val result = OcrResult(listOf(OcrPageResult(pageIndex = 0, text = "One page")))
+
+        assertEquals(
+            "One page",
+            formatOcrPreview(result, pageHeading = { "Page $it" }, emptyPageText = "Empty"),
+        )
+    }
+
+    @Test
     fun allEmptyPagesRemainSuccessfulWithZeroTextFound() {
         val result = OcrResult(
             pages = listOf(

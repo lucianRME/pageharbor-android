@@ -16,9 +16,14 @@
     <string name="home_scan_result_local_statement">Scanner result was received locally.</string>
     <string name="home_clear_scan_result">Clear scan result</string>
     <string name="ocr_recognize_action">Recognize Text</string>
+    <string name="ocr_recognize_again_action">Recognize Again</string>
+    <string name="ocr_view_action">View recognized text</string>
+    <string name="ocr_back_action">Back</string>
+    <string name="ocr_back_content_description">Back to scan result</string>
     <string name="ocr_recognizing_progress">Recognizing text…</string>
     <string name="ocr_result_heading">Recognized text</string>
     <string name="ocr_page_summary">Text found on %1$d of %2$d pages</string>
+    <string name="ocr_single_page_summary">Text recognized on 1 page</string>
     <string name="ocr_preview_page_heading">Page %1$d</string>
     <string name="ocr_preview_empty_page">No text recognized on this page.</string>
     <string name="ocr_no_text">No text was recognized in this scan.</string>

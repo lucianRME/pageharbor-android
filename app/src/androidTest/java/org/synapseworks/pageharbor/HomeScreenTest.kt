@@ -620,7 +620,7 @@ class HomeScreenTest {
     }
 
     @Test
-    fun ocrSuccessDisplaysOrderedSelectablePreview() {
+    fun ocrSuccessShowsViewActionAndDedicatedOrderedPreview() {
         composeTestRule.setContent {
             PageHarborApp(
                 scannerSpikeState = scanSummary(jpegPageCount = 2),
@@ -635,11 +635,12 @@ class HomeScreenTest {
             )
         }
 
-        composeTestRule.onNodeWithText("Recognized text").performScrollTo().assertIsDisplayed()
-        composeTestRule.onNodeWithText("Text found on 2 of 2 pages").performScrollTo().assertIsDisplayed()
-        composeTestRule.onNodeWithText("Page 1\nFirst page text\n\nPage 2\nSecond page text")
-            .performScrollTo()
-            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("View recognized text").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("Recognized text").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Text found on 2 of 2 pages").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Page 1\nFirst page text\n\nPage 2\nSecond page text").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Back").performClick()
+        composeTestRule.onNodeWithText("View recognized text").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -653,9 +654,8 @@ class HomeScreenTest {
             )
         }
 
-        composeTestRule.onNodeWithText("No text was recognized in this scan.")
-            .performScrollTo()
-            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("View recognized text").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("No text was recognized in this scan.").assertIsDisplayed()
     }
 
     @Test
@@ -678,9 +678,9 @@ class HomeScreenTest {
             )
         }
 
-        composeTestRule.onNodeWithText("Readable page", substring = true).performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("View recognized text").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("Readable page", substring = true).assertIsDisplayed()
         composeTestRule.onNodeWithText("Some pages could not be read.")
-            .performScrollTo()
             .assertIsDisplayed()
     }
 
@@ -697,7 +697,8 @@ class HomeScreenTest {
             )
         }
 
-        composeTestRule.onNodeWithText("Clear recognized text").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("View recognized text").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("Clear recognized text").performClick()
 
         assertEquals(1, clearCallCount)
         composeTestRule.onNodeWithText("Save PDF").assertIsEnabled()

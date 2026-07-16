@@ -19,6 +19,7 @@ import org.synapseworks.pageharbor.document.PdfShareState
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
 import org.synapseworks.pageharbor.ocr.OcrUiState
 import org.synapseworks.pageharbor.ui.home.HomeScreen
+import org.synapseworks.pageharbor.ui.home.OcrResultScreen
 import org.synapseworks.pageharbor.ui.theme.PageHarborTheme
 
 @Composable
@@ -38,6 +39,7 @@ fun PageHarborApp(
     onClearScanResult: () -> Unit = {},
 ) {
     PageHarborTheme {
+        var showOcrResult by remember { mutableStateOf(false) }
         val snackbarHostState = remember { SnackbarHostState() }
         var showPrivacyInfo by remember { mutableStateOf(false) }
         var showAbout by remember { mutableStateOf(false) }
@@ -55,7 +57,20 @@ fun PageHarborApp(
             stringResource(R.string.page_export_destination_unavailable)
         val pageExportFailedMessage = stringResource(R.string.page_export_failed)
 
-        HomeScreen(
+        if (showOcrResult && ocrUiState is OcrUiState.Success) {
+            OcrResultScreen(
+                result = ocrUiState.result,
+                onBack = { showOcrResult = false },
+                onRecognizeAgain = {
+                    showOcrResult = false
+                    onRecognizeText()
+                },
+                onClearRecognizedText = {
+                    showOcrResult = false
+                    onClearRecognizedText()
+                },
+            )
+        } else HomeScreen(
             snackbarHostState = snackbarHostState,
             scannerSpikeState = scannerSpikeState,
             pdfSaveState = pdfSaveState,
@@ -75,7 +90,11 @@ fun PageHarborApp(
             onSharePdf = onSharePdf,
             onExportPages = onExportPages,
             onRecognizeText = onRecognizeText,
-            onClearRecognizedText = onClearRecognizedText,
+            onViewRecognizedText = { showOcrResult = true },
+            onClearRecognizedText = {
+                showOcrResult = false
+                onClearRecognizedText()
+            },
             onPrivacyInfo = {
                 showPrivacyInfo = true
             },
