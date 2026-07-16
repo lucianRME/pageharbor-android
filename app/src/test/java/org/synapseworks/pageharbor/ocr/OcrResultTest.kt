@@ -10,8 +10,8 @@ class OcrResultTest {
     fun plainTextCombinesRecognizedPagesInOrder() {
         val result = OcrResult(
             pages = listOf(
-                OcrPageResult(text = "First page"),
-                OcrPageResult(text = "Second page"),
+                OcrPageResult(pageIndex = 0, text = "First page"),
+                OcrPageResult(pageIndex = 1, text = "Second page"),
             ),
         )
 
@@ -31,8 +31,8 @@ class OcrResultTest {
         val secondPage = OcrPage { ByteArrayInputStream(byteArrayOf(2)) }
         val expected = OcrResult(
             pages = listOf(
-                OcrPageResult(text = "One"),
-                OcrPageResult(text = "Two"),
+                OcrPageResult(pageIndex = 0, text = "One"),
+                OcrPageResult(pageIndex = 1, text = "Two"),
             ),
         )
         val engine = FakeOcrEngine(expected)
@@ -41,6 +41,25 @@ class OcrResultTest {
 
         assertSame(expected, actual)
         assertEquals(listOf(firstPage, secondPage), engine.receivedPages)
+    }
+
+    @Test
+    fun failedPageRetainsItsIndexAndDoesNotRemoveEmptyPages() {
+        val result = OcrResult(
+            pages = listOf(
+                OcrPageResult(pageIndex = 0, text = "First"),
+                OcrPageResult(pageIndex = 1, text = ""),
+                OcrPageResult(
+                    pageIndex = 2,
+                    text = "",
+                    error = OcrPageError.IMAGE_UNREADABLE,
+                ),
+            ),
+        )
+
+        assertEquals(listOf(0, 1, 2), result.pages.map { it.pageIndex })
+        assertEquals("First\n\n\n\n", result.plainText)
+        assertEquals(OcrPageError.IMAGE_UNREADABLE, result.pages[2].error)
     }
 
     private class FakeOcrEngine(

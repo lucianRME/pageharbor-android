@@ -13,5 +13,18 @@ data class OcrResult(
 }
 
 data class OcrPageResult(
+    val pageIndex: Int,
     val text: String,
+    val error: OcrPageError? = null,
 )
+
+/**
+ * A safe, engine-neutral description of an OCR failure for one page.
+ *
+ * It deliberately excludes exception messages and document metadata, which could contain
+ * sensitive information. A failed page is retained in [OcrResult.pages] with its original index.
+ */
+enum class OcrPageError {
+    IMAGE_UNREADABLE,
+    RECOGNITION_FAILED,
+}

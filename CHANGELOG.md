@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Retained Tesseract as a documented future OCR alternative
 - Clarified that scanner editing remains provided by ML Kit
 - Added a dependency-free OCR engine boundary and in-memory result model
+- Bounded OCR JPEG decoding to a 2,800 px long edge and 7 MP per-page bitmap cap
 
 ## [0.2.0-dev]
 
