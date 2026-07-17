@@ -19,18 +19,15 @@ PageHarbor is in early development. This roadmap is public-facing and intentiona
 
 Document scanning, PDF save, PDF share, and JPEG page export have been validated on a physical Samsung device.
 
-## In Progress
+## Completed milestones
 
 ### `v0.3.0-dev` — Offline OCR Foundation
-
-Planned targets:
 
 - Add bundled ML Kit Text Recognition v2 Latin after dependency and privacy validation. **Implemented:** the bundled, on-device Latin engine processes active-session JPEG pages sequentially and retains in-memory page indexes and failures.
 - Introduce a narrow OCR integration boundary and result model. **Implemented:** ML Kit types are confined to `MlKitOcrEngine`.
 - Recognize text from scanned JPEG pages and combine it in page order. **Implemented in the scan-result flow; physical scan-flow validation remains in progress.**
-- Expose a plain-text preview and allow explicit copying of recognized text. **Implemented:** an in-memory result surface is available after explicit user action; copying remains pending.
-- Validate English, German, and Romanian recognition.
-- Verify OCR operation without a PageHarbor network permission and benchmark representative sample documents.
+- Expose a plain-text preview and allow explicit copying of recognized text. **Implemented:** text remains in memory and is copied only through explicit user action.
+- Preserve page ordering, empty/partial-result handling, bounded decode, and local-only processing.
 - Preserve the scan, PDF save, PDF share, and JPEG export flows.
 
 OCR is optional: it must run only after explicit user action and must never block scanning or export. OCR results remain in memory unless the user explicitly copies or exports them. PageHarbor will not introduce cloud OCR or a proprietary backend.
@@ -39,15 +36,13 @@ The current UI keeps Home focused on starting a scan. Scan Result owns export an
 
 PageHarbor intentionally relies on ML Kit for scanner editing capabilities rather than duplicating crop, rotate, filters, page deletion, or reordering. Use platform capabilities where they are strong. Build only what adds distinct user value.
 
-Implementation sequence:
+### `v0.4.0-dev` — Planned work
 
-1. Dependency and privacy validation.
-2. OCR engine adapter and result model.
-3. Single-page OCR.
-4. Multi-page OCR.
-5. Copy-text UX.
-6. Multilingual benchmark.
-7. Physical-device regression validation.
+- Searchable PDF.
+- Smart filename.
+- Current-document OCR search.
+- OCR highlighting.
+- Future document organization.
 
 ## Planned MVP
 

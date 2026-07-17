@@ -35,6 +35,14 @@ The MVP is small, and scanner behavior still needs validation. Premature layers 
 Consequences:
 Static screens should stay simple. Flow coordination, adapters, and helper components should be added when they remove real complexity, isolate platform behavior, or make cleanup and error paths testable.
 
+## ADR-008: Local Three-Surface Navigation
+
+Decision:
+Use local screen-state navigation for Home, Scan Result, and OCR Result rather than Navigation Compose.
+
+Consequences:
+Home owns introduction and scan launch; Scan Result owns post-scan save/share/export/OCR feedback; OCR Result owns in-memory text actions. PageHarbor intentionally has no bottom navigation, drawer, tabs, or internal document library.
+
 ## ADR-004: System Document Scanner First
 
 Decision:
