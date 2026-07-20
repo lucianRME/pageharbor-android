@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Added a deterministic, local-only document classifier foundation for active-session OCR text, with broad invoice, receipt, letter, form, and unknown categories.
+- Added Unicode-aware English, German, and Romanian rule matching with conservative confidence and conflict handling; no OCR content is retained or logged.
+
 ## [0.4.0-dev]
 
 ### Changed
