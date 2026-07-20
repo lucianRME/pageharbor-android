@@ -105,6 +105,38 @@ class DocumentClassifierTest {
     }
 
     @Test
+    fun classifiesInvoiceWhenReceiptTermsAreAlsoPresentButInvoiceEvidenceWins() {
+        assertClassification(
+            text = "Invoice\nVAT\nTotal due\nReceipt\nSubtotal",
+            category = DocumentCategory.INVOICE,
+            confidence = DocumentClassificationConfidence.HIGH,
+        )
+    }
+
+    @Test
+    fun classifiesReceiptWhenInvoiceLikeTaxTermIsOnlyWeakEvidence() {
+        assertClassification(
+            text = "Receipt\nSubtotal\nVAT",
+            category = DocumentCategory.RECEIPT,
+            confidence = DocumentClassificationConfidence.MEDIUM,
+        )
+    }
+
+    @Test
+    fun recognizesShortRetailAndRomanianReceiptEvidence() {
+        assertClassification(
+            text = "Receipt\nSubtotal",
+            category = DocumentCategory.RECEIPT,
+            confidence = DocumentClassificationConfidence.MEDIUM,
+        )
+        assertClassification(
+            text = "Chitanță\nSubtotal",
+            category = DocumentCategory.RECEIPT,
+            confidence = DocumentClassificationConfidence.MEDIUM,
+        )
+    }
+
+    @Test
     fun returnsUnknownForUnrelatedText() {
         assertClassification(
             text = "Meeting notes for next week",
@@ -128,6 +160,43 @@ class DocumentClassifierTest {
             text = "Bill",
             category = DocumentCategory.UNKNOWN,
             confidence = DocumentClassificationConfidence.LOW,
+        )
+    }
+
+    @Test
+    fun keepsInformalAndGenericUsesOfCategoryWordsUnknown() {
+        assertClassification(
+            text = "Hello there, regards",
+            category = DocumentCategory.UNKNOWN,
+            confidence = DocumentClassificationConfidence.LOW,
+        )
+        assertClassification(
+            text = "This paragraph uses the word form in an unrelated sentence.",
+            category = DocumentCategory.UNKNOWN,
+            confidence = DocumentClassificationConfidence.LOW,
+        )
+    }
+
+    @Test
+    fun handlesPunctuationCaseAndMissingDiacriticsWithoutChangingPrecedence() {
+        assertClassification(
+            text = "!!! iNvOiCe ??? VAT ### TOTAL DUE",
+            category = DocumentCategory.INVOICE,
+            confidence = DocumentClassificationConfidence.HIGH,
+        )
+        assertClassification(
+            text = "Rechnunq\nMWST",
+            category = DocumentCategory.UNKNOWN,
+            confidence = DocumentClassificationConfidence.LOW,
+        )
+    }
+
+    @Test
+    fun handlesLongAndPathLikeOcrInputWithoutLeakingIntoClassificationOutput() {
+        assertClassification(
+            text = "ordinary prose ".repeat(2_000) + "/\\:*?\"<>|",
+            category = DocumentCategory.UNKNOWN,
+            confidence = DocumentClassificationConfidence.NONE,
         )
     }
 

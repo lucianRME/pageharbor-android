@@ -125,6 +125,8 @@ class LocalSearchablePdfExportCoordinatorTest {
         try {
             assertPreparedFilename(source, "Invoice\nVAT", "invoice.pdf")
             assertPreparedFilename(source, "Receipt\nSubtotal", "receipt.pdf")
+            assertPreparedFilename(source, "Dear reader\nRegards", "letter.pdf")
+            assertPreparedFilename(source, "Application form\nPlease complete", "form.pdf")
             assertPreparedFilename(source, "Unrelated scan text", "document.pdf")
             assertPreparedFilename(source, "", "document.pdf")
         } finally {

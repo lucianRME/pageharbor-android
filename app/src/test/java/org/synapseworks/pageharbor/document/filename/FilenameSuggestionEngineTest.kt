@@ -20,6 +20,17 @@ class FilenameSuggestionEngineTest {
     }
 
     @Test
+    fun categorySuggestionsContainOnlySafeAsciiPdfNames() {
+        DocumentCategory.entries.forEach { category ->
+            val filename = engine.suggest(category).filename
+
+            assertTrue(filename.endsWith(".pdf"))
+            assertFalse(filename.any { it.code < 0x20 })
+            assertFalse(filename.any { it in setOf('/', '\\', ':', '*', '?', '"', '<', '>', '|') })
+        }
+    }
+
+    @Test
     fun repeatedCallsReturnTheSameSuggestion() {
         val first = engine.suggest(DocumentCategory.INVOICE)
 
