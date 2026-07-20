@@ -42,6 +42,7 @@ Future platform integrations should have narrow responsibilities:
 
 - Document scanner adapter: launches the selected scanner and converts scanner-specific results into PageHarbor concepts.
 - PDF generator: prepares a PDF locally from scanned page data.
+- Searchable-PDF export coordinator: combines active-session page URIs and local OCR, owns a prepared private-cache PDF, and copies it to a caller-selected SAF destination.
 - Temporary file manager: owns temporary file creation, lifetime, and cleanup.
 - File export writer: writes a prepared document to the user-selected destination.
 - Android share launcher: starts the system share sheet for a prepared or saved PDF.

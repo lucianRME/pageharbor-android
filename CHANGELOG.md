@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added a dedicated in-memory OCR result surface with page-aware formatting and explicit Copy Text
 - Refined the app into Home, Scan Result, and OCR Result surfaces with user-facing scan summaries and local operation feedback
 - Added a caller-driven local searchable-PDF generation foundation with JPEG image pages and invisible Unicode OCR text; no user-facing export flow changed
+- Added a UI-independent searchable-PDF coordinator that runs or accepts local OCR, prepares a private temporary PDF, writes it to a caller-selected SAF destination, and cleans it up
 
 ## [0.2.0-dev]
 

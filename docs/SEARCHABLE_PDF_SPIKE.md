@@ -1,6 +1,6 @@
 # Searchable PDF Technical Spike
 
-Status: `v0.4.0-dev` production PDF-generation foundation. No scan, save, share, JPEG-export, permission, network, or user-interface flow is changed. The generator remains internal and caller-driven; only PdfBox-Android is promoted to the production APK.
+Status: `v0.4.0-dev` PDF-generation and private-SAF-write foundation. No scan, share, JPEG-export, permission, network, or user-interface flow is changed. The generator and coordinator remain internal and caller-driven; there is no Scan Result action and existing PDF save behavior is unchanged.
 
 ## Problem statement
 
@@ -80,7 +80,7 @@ This is evidence that the PDF model is searchable/copyable and the visible page 
 
 The 400 × 560 fixture is not representative, so it makes no release performance claim. Benchmark 1, 5, and 10 consented pages on low/mid/high-tier devices: wall time, peak heap, output size, cancellation, and cleanup. Process one page at a time; prefer embedding JPEG bytes without bitmap re-encoding after fidelity validation.
 
-The isolated spike had no release APK impact because PdfBox-Android was test-only. This production foundation promotes exactly `com.tom-roush:pdfbox-android:2.0.27.0`; no Bouncy Castle dependency is declared directly, and no networking or native dependency is added. With identical source, the unsigned release APK is **60,277,817 bytes** with the production dependency and **51,864,601 bytes** when it is `compileOnly`: an exact production dependency delta of **+8,413,216 bytes** (8.02 MiB). The release build has minification disabled, so this is the current raw APK impact rather than an App Bundle/download-size estimate. The test APK is not a production-size estimate.
+The isolated spike had no release APK impact because PdfBox-Android was test-only. This production foundation promotes exactly `com.tom-roush:pdfbox-android:2.0.27.0`; no Bouncy Castle dependency is declared directly, and no networking or native dependency is added. At dependency adoption, identical-source release builds measured **60,277,817 bytes** with the production dependency and **51,864,601 bytes** when it was `compileOnly`: an exact production dependency delta of **+8,413,216 bytes** (8.02 MiB). The release build has minification disabled, so this is the raw APK impact rather than an App Bundle/download-size estimate. The test APK is not a production-size estimate.
 
 No network access, permission, sensitive logging, persistent document database, or cloud processing was added. The manifest continues explicitly removing `INTERNET` and `ACCESS_NETWORK_STATE`. Production output must be a session-owned private-cache file; delete partial files on failure/cancellation and clean superseded prepared PDFs promptly.
 
@@ -88,8 +88,9 @@ No network access, permission, sensitive logging, persistent document database, 
 
 1. PdfBox-Android `2.0.27.0` is the narrow production dependency because Android `PdfDocument` cannot provide verified invisible text rendering and embedded Unicode-font control.
 2. The `SearchablePdfGenerator` foundation accepts ordered caller-owned JPEG streams, engine-neutral OCR results, and a caller-provided temporary output file. It composes image backgrounds, embeds the font, writes `RenderingMode.NEITHER` text, and deletes file outputs after failure or cancellation.
-3. Normalize orientation before OCR; retain line reading order and geometry. Add polygons only if boxes prove insufficient.
-4. Preserve the original scanner PDF as a fallback until fidelity, multi-viewer, SAF/share, cancellation, and cleanup checks pass.
+3. `LocalSearchablePdfExportCoordinator` accepts active-session JPEG URIs plus supplied OCR or an `OcrEngine`, prepares the PDF in private cache, copies it to a caller-selected SAF URI, and deletes the prepared PDF after success, failure, cancellation, or explicit discard. It reports recognizing, generating, and writing stages without logging document data.
+4. Normalize orientation before OCR; retain line reading order and geometry. Add polygons only if boxes prove insufficient.
+5. Preserve the original scanner PDF as a fallback until fidelity, multi-viewer, and user-flow validation checks pass.
 
 **Go/no-go: Proceed with constraints.** Use a newly composed JPEG-page PDF plus a PdfBox-Android invisible text layer; do not ship before the stated production validation gates.
 
