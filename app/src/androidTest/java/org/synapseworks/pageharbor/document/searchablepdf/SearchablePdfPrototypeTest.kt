@@ -30,9 +30,8 @@ import org.junit.Test
 class SearchablePdfPrototypeTest {
     @Test
     fun writesAndExtractsInvisibleRomanianAndGermanText() {
-        // The library is intentionally an androidTest-only dependency, so its font assets live in
-        // the test APK rather than PageHarbor's production APK.
-        val context = object : ContextWrapper(InstrumentationRegistry.getInstrumentation().context) {
+        // The generator loads the same PdfBox-Android font asset from the production APK.
+        val context = object : ContextWrapper(InstrumentationRegistry.getInstrumentation().targetContext) {
             override fun getApplicationContext(): Context = this
         }
         PDFBoxResourceLoader.init(context)

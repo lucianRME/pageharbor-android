@@ -109,10 +109,10 @@ This is an architecture direction, not approval to add a dependency, implement O
 ## ADR-009: Searchable PDF Composition Direction
 
 Decision:
-If searchable PDF export is approved after the `v0.4.0-dev` validation gates, create a new local PDF from scanner JPEG pages and append an invisible embedded-font text layer from engine-neutral OCR line geometry. Do not make mutation of the scanner-produced PDF the first implementation path.
+For the `v0.4.0-dev` PDF-generation foundation, create a new local PDF from scanner JPEG pages and append an invisible embedded-font text layer from engine-neutral OCR line geometry. Use PdfBox-Android `2.0.27.0` (Apache-2.0) as the narrow production dependency. Do not make mutation of the scanner-produced PDF the first implementation path.
 
 Rationale:
 JPEG composition gives PageHarbor one controlled coordinate system for the background image and OCR bounds, keeps scanner-PDF parser compatibility out of the critical path, and makes page size, rotation, temporary output, and cleanup explicit. The isolated PdfBox-Android prototype proved on a physical Android device that invisible embedded Unicode text can be extracted from an image PDF.
 
 Consequences:
-This does not approve a production PDF dependency or user-facing export change. A production implementation must pass current dependency/licence/security review, release-size measurement, page-rotation and JPEG-fidelity validation, multiple-viewer search/selection/copy validation, and cancellation/cleanup tests. The existing scanner PDF remains the fallback until those gates pass. All OCR geometry and prepared files remain active-session local data and must never be logged, retained as a library, or transmitted.
+This approves only a UI-independent, caller-driven PDF-generation component; it does not approve a user-facing export change, SAF integration, or changes to existing scanner-PDF export. PdfBox-Android is necessary because Android `PdfDocument` lacks verified invisible-text rendering and embedded Unicode-font control. Do not declare Bouncy Castle directly unless a later PdfBox compatibility requirement proves necessary. Record the release-size measurement with the implementation. The existing scanner PDF remains the fallback until page-rotation and JPEG-fidelity validation plus multiple-viewer search/selection/copy validation pass. All OCR geometry and prepared files remain active-session local data and must never be logged, retained as a library, or transmitted.

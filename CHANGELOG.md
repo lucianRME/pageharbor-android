@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added user-initiated offline OCR with an in-memory recognized-text preview and safe partial or empty-result handling
 - Added a dedicated in-memory OCR result surface with page-aware formatting and explicit Copy Text
 - Refined the app into Home, Scan Result, and OCR Result surfaces with user-facing scan summaries and local operation feedback
+- Added a caller-driven local searchable-PDF generation foundation with JPEG image pages and invisible Unicode OCR text; no user-facing export flow changed
 
 ## [0.2.0-dev]
 

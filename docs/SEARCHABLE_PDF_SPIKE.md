@@ -1,6 +1,6 @@
 # Searchable PDF Technical Spike
 
-Status: `v0.4.0-dev` investigation and isolated prototype only. No scan, save, share, JPEG-export, permission, network, or user-interface flow is changed. The PDF dependency is `androidTestImplementation` only and is not in the production APK.
+Status: `v0.4.0-dev` production PDF-generation foundation. No scan, save, share, JPEG-export, permission, network, or user-interface flow is changed. The generator remains internal and caller-driven; only PdfBox-Android is promoted to the production APK.
 
 ## Problem statement
 
@@ -72,7 +72,7 @@ Do not use alpha-zero text as the primary mechanism: viewers can optimize or int
 
 ## Prototype result
 
-`SearchablePdfPrototypeTest` ran successfully on a Samsung SM-S938B (Android 16) on 2026-07-20. It creates a deterministic non-sensitive local bitmap, writes a one-page lossless image PDF, embeds the library-provided Liberation Sans font, overlays invisible Romanian/German text, parses exact extracted text, verifies an image XObject, and deletes its private installed-test-target cache PDF in `finally`. Liberation Sans is SIL Open Font License 1.1; production must ship its required notice or select and attribute another compatible Latin font.
+`SearchablePdfPrototypeTest` ran successfully on a Samsung SM-S938B (Android 16) on 2026-07-20. It creates a deterministic non-sensitive local bitmap, writes a one-page lossless image PDF, embeds the library-provided Liberation Sans font, overlays invisible Romanian/German text, parses exact extracted text, verifies an image XObject, and deletes its private installed-test-target cache PDF in `finally`. Liberation Sans is SIL Open Font License 1.1; its notice must be retained with the shipped dependency.
 
 This is evidence that the PDF model is searchable/copyable and the visible page is an image background. It is not a manual cross-viewer selection result. Before shipping, manually validate search, selection, copy, and visuals in Adobe Acrobat, Google Drive, Samsung/Android, and desktop viewers.
 
@@ -80,14 +80,14 @@ This is evidence that the PDF model is searchable/copyable and the visible page 
 
 The 400 × 560 fixture is not representative, so it makes no release performance claim. Benchmark 1, 5, and 10 consented pages on low/mid/high-tier devices: wall time, peak heap, output size, cancellation, and cleanup. Process one page at a time; prefer embedding JPEG bytes without bitmap re-encoding after fidelity validation.
 
-A detached baseline build and this spike both produced a 51,848,217-byte unsigned release APK: **0-byte release size delta**. Their hashes differ because build metadata is not byte-reproducible, but the production artifact size is unchanged. The debug APK is 55,811,692 bytes versus the 55,795,922-byte baseline (+5,770 bytes) from retained production-foundation code; PdfBox remains test-only. The test APK is 10,219,126 bytes and is not a production estimate. Compare release APK/App Bundle outputs with and without a future production PdfBox dependency before adoption.
+The isolated spike had no release APK impact because PdfBox-Android was test-only. This production foundation promotes exactly `com.tom-roush:pdfbox-android:2.0.27.0`; no Bouncy Castle dependency is declared directly, and no networking or native dependency is added. With identical source, the unsigned release APK is **60,277,817 bytes** with the production dependency and **51,864,601 bytes** when it is `compileOnly`: an exact production dependency delta of **+8,413,216 bytes** (8.02 MiB). The release build has minification disabled, so this is the current raw APK impact rather than an App Bundle/download-size estimate. The test APK is not a production-size estimate.
 
 No network access, permission, sensitive logging, persistent document database, or cloud processing was added. The manifest continues explicitly removing `INTERNET` and `ACCESS_NETWORK_STATE`. Production output must be a session-owned private-cache file; delete partial files on failure/cancellation and clean superseded prepared PDFs promptly.
 
 ## Implementation plan and recommendation
 
-1. Approve PdfBox-Android only after current dependency/security/licence review and release-size measurement.
-2. Add a session-scoped writer from JPEG page bytes, page dimensions, embedded OFL-compatible Latin font assets, and `RenderingMode.NEITHER`.
+1. PdfBox-Android `2.0.27.0` is the narrow production dependency because Android `PdfDocument` cannot provide verified invisible text rendering and embedded Unicode-font control.
+2. The `SearchablePdfGenerator` foundation accepts ordered caller-owned JPEG streams, engine-neutral OCR results, and a caller-provided temporary output file. It composes image backgrounds, embeds the font, writes `RenderingMode.NEITHER` text, and deletes file outputs after failure or cancellation.
 3. Normalize orientation before OCR; retain line reading order and geometry. Add polygons only if boxes prove insufficient.
 4. Preserve the original scanner PDF as a fallback until fidelity, multi-viewer, SAF/share, cancellation, and cleanup checks pass.
 

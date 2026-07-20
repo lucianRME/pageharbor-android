@@ -78,13 +78,13 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.play.services.mlkit.document.scanner)
     implementation(libs.mlkit.text.recognition.latin)
+    // Required for local invisible Unicode text layers; no networking or native binaries.
+    implementation(libs.pdfbox.android)
 
     testImplementation(libs.junit)
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.test.runner)
-    // Isolated technical-spike dependency. It is not packaged in the production APK.
-    androidTestImplementation(libs.pdfbox.android)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 
