@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added a caller-driven local searchable-PDF generation foundation with JPEG image pages and invisible Unicode OCR text; no user-facing export flow changed
 - Added a UI-independent searchable-PDF coordinator that runs or accepts local OCR, prepares a private temporary PDF, writes it to a caller-selected SAF destination, and cleans it up
 - Added the first Scan Result action for saving a searchable PDF through the Android system file picker
+- Recorded initial external searchable-PDF viewer validation, including local Android rendering, Unicode extraction, performance smoke measurements, and remaining managed-viewer interaction limitations
 
 ## [0.2.0-dev]
 

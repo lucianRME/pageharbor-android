@@ -84,6 +84,22 @@ The isolated spike had no release APK impact because PdfBox-Android was test-onl
 
 No network access, permission, sensitive logging, persistent document database, or cloud processing was added. The manifest continues explicitly removing `INTERNET` and `ACCESS_NETWORK_STATE`. Production output must be a session-owned private-cache file; delete partial files on failure/cancellation and clean superseded prepared PDFs promptly.
 
+## External viewer validation (2026-07-20)
+
+Deterministic, non-sensitive JPEG fixtures were generated through `PdfBoxSearchablePdfGenerator` on a Samsung SM-S938B running Android 16: one page containing English plus Romanian (`ă â î ș ț`) and German (`ä ö ü ß`) text, and a three-page English/Romanian/German document with paragraphs and numbers. The resulting PDFs contained respectively one and three 1,000 × 1,400-point unrotated pages. Structure inspection found an embedded `Type0` font with a `ToUnicode` map on every page, image backgrounds, and exact extraction of the fixed fixture text in normal reading order.
+
+Files by Google’s on-device PDF preview rendered both documents with the expected page count, orientation, margins, visible scan image, and no visible duplicate OCR overlay. Its accessibility text exposed the English, Romanian, and German fixture text with the expected Unicode characters. That viewer exposes neither in-document search nor text-selection/copy controls, so those interactions could not be validated there. The installed Google Drive PDF viewer showed an empty surface for these local test URIs; installed Chrome was blocked by scoped-storage access for a direct `file://` launch and by device enterprise browser/account handling for the equivalent provider-grant launch. Those are viewer/device constraints, not evidence of a malformed PDF; no generator change was made. Adobe Acrobat was not installed.
+
+The local device smoke measurements (one warm run; OCR uses the shipped bundled Latin recognizer) were: 1 page — OCR 125 ms, generation 34 ms, total 159 ms, 82,507 bytes; 5 pages — 235 ms, 46 ms, 281 ms, 373,928 bytes; 10 pages — 484 ms, 79 ms, 563 ms, 738,204 bytes. These are smoke measurements only, not a release performance target. The fixture PDFs and all private/cache and Downloads copies were removed after validation.
+
+### Desktop Chrome continuation (2026-07-20)
+
+Desktop Google Chrome 150.0.7871.129 on macOS loaded both regenerated fixtures in its built-in PDF viewer. Its supported text-fragment highlighting path located the ASCII token on page 1, the Romanian token `țarășină` on page 2, and the German token `größenmaß` on page 3. The corresponding highlights aligned with the visible words. Chrome's native select-all operation highlighted each line tightly against the visible fixture text, with no duplicate visible OCR text; its own selected-text reply preserved the single-page Unicode text exactly and retained the three-page English/Romanian/German paragraph order.
+
+macOS denied this validation environment assistive access, so the physical Edit > Copy pasteboard action could not be automated. Chrome's native selected-text payload—the value supplied to its copy path—was verified instead, but a user-level clipboard paste remains to be checked. Adobe Acrobat was not installed, and the managed Android Google Drive viewer remains unvalidated because it rendered an empty local-document surface. No font, text-layer, or coordinate defect was found in Chrome; the earlier wide selection was traced to intentionally over-wide synthetic fixture bounds and disappeared once those test-only bounds matched the visible fixture text.
+
+**Known limitation:** Adobe Acrobat validation and a manual Chrome clipboard paste check remain required before declaring cross-viewer compatibility complete. No generator change is justified by the available evidence.
+
 ## Implementation plan and recommendation
 
 1. PdfBox-Android `2.0.27.0` is the narrow production dependency because Android `PdfDocument` cannot provide verified invisible text rendering and embedded Unicode-font control.
