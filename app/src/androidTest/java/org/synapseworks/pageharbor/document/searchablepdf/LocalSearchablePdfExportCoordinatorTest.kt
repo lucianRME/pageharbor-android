@@ -1,8 +1,12 @@
 package org.synapseworks.pageharbor.document.searchablepdf
 
 import android.content.Context
+import android.app.Activity
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.net.Uri
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.FileProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import com.tom_roush.pdfbox.pdmodel.PDDocument
@@ -115,6 +119,36 @@ class LocalSearchablePdfExportCoordinatorTest {
     }
 
     @Test
+    fun preparesCategoryBasedFilenameSuggestions() = runBlocking {
+        val source = sharedFile("filename-source.jpg").apply { writeText("jpeg") }
+
+        try {
+            assertPreparedFilename(source, "Invoice\nVAT", "invoice.pdf")
+            assertPreparedFilename(source, "Receipt\nSubtotal", "receipt.pdf")
+            assertPreparedFilename(source, "Unrelated scan text", "document.pdf")
+            assertPreparedFilename(source, "", "document.pdf")
+        } finally {
+            source.delete()
+        }
+    }
+
+    @Test
+    fun createDocumentReceivesSuggestionAndReturnsUserEditedDestinationUri() {
+        val contract = ActivityResultContracts.CreateDocument("application/pdf")
+        val intent = contract.createIntent(context, "invoice.pdf")
+        val userEditedDestination = Uri.parse(
+            "content://org.synapseworks.pageharbor.test/user-edited-name.pdf",
+        )
+
+        assertEquals(Intent.ACTION_CREATE_DOCUMENT, intent.action)
+        assertEquals("invoice.pdf", intent.getStringExtra(Intent.EXTRA_TITLE))
+        assertEquals(
+            userEditedDestination,
+            contract.parseResult(Activity.RESULT_OK, Intent().setData(userEditedDestination)),
+        )
+    }
+
+    @Test
     fun deletesTemporaryPdfWhenDestinationCannotBeOpened() = runBlocking {
         val source = sharedFile("destination-failure-source.jpg").apply { writeText("jpeg") }
         val generator = RecordingGenerator()
@@ -177,15 +211,35 @@ class LocalSearchablePdfExportCoordinatorTest {
         }
     }
 
-    private fun pageResult(): OcrPageResult = OcrPageResult(
+    private suspend fun assertPreparedFilename(source: File, text: String, expectedFilename: String) {
+        val coordinator = LocalSearchablePdfExportCoordinator(
+            context = context,
+            ocrEngine = FailingOcrEngine,
+            generator = RecordingGenerator(),
+        )
+        val prepared = coordinator.prepare(
+            SearchablePdfExportRequest(
+                pageUris = listOf(fileUri(source)),
+                ocrResult = OcrResult(listOf(pageResult(text = text))),
+            ),
+        ) as SearchablePdfPreparedExport.Ready
+
+        try {
+            assertEquals(expectedFilename, prepared.filenameSuggestion.filename)
+        } finally {
+            coordinator.discardPreparedExport(prepared)
+        }
+    }
+
+    private fun pageResult(text: String = "English: searchable text"): OcrPageResult = OcrPageResult(
         pageIndex = 0,
-        text = "English: searchable text",
+        text = text,
         layout = OcrPageLayout(
             imageWidthPx = 240,
             imageHeightPx = 320,
             lines = listOf(
                 OcrTextLine(
-                    text = "English: searchable text",
+                    text = text,
                     bounds = OcrTextBounds(left = 16f, top = 20f, right = 224f, bottom = 48f),
                 ),
             ),

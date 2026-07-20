@@ -327,7 +327,7 @@ class MainActivity : ComponentActivity() {
                     searchablePdfSaveState = SearchablePdfSaveState.ChoosingDestination
                     try {
                         createSearchablePdfDocumentLauncher.launch(
-                            getString(R.string.searchable_pdf_default_filename),
+                            preparedExport.filenameSuggestion.filename,
                         )
                     } catch (_: ActivityNotFoundException) {
                         searchablePdfExportCoordinator.discardPreparedExport(preparedExport)

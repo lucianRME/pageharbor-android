@@ -10,6 +10,9 @@ import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import org.synapseworks.pageharbor.document.classification.DocumentClassifier
+import org.synapseworks.pageharbor.document.filename.FilenameSuggestion
+import org.synapseworks.pageharbor.document.filename.FilenameSuggestionEngine
 import org.synapseworks.pageharbor.ocr.OcrEngine
 import org.synapseworks.pageharbor.ocr.OcrPage
 import org.synapseworks.pageharbor.ocr.OcrResult
@@ -50,6 +53,8 @@ sealed interface SearchablePdfPreparedExport {
         internal val progressListener: SearchablePdfExportProgressListener,
         val pageCount: Int,
         val textLayerPageCount: Int,
+        /** Safe, category-only title for the immediately following user-controlled SAF save. */
+        val filenameSuggestion: FilenameSuggestion,
     ) : SearchablePdfPreparedExport
 
     data class Failure(val reason: SearchablePdfPreparationError) : SearchablePdfPreparedExport
@@ -82,6 +87,8 @@ class LocalSearchablePdfExportCoordinator(
     context: Context,
     private val ocrEngine: OcrEngine,
     private val generator: SearchablePdfGenerator = PdfBoxSearchablePdfGenerator(context),
+    private val documentClassifier: DocumentClassifier = DocumentClassifier(),
+    private val filenameSuggestionEngine: FilenameSuggestionEngine = FilenameSuggestionEngine(),
 ) : SearchablePdfExportCoordinator {
     private val applicationContext: Context = context.applicationContext ?: context
 
@@ -94,6 +101,9 @@ class LocalSearchablePdfExportCoordinator(
             ?: return SearchablePdfPreparedExport.Failure(SearchablePdfPreparationError.OCR_FAILED)
         val orderedOcrPages = orderOcrPages(ocrResult, request.pageUris.size)
             ?: return SearchablePdfPreparedExport.Failure(SearchablePdfPreparationError.OCR_RESULT_MISMATCH)
+        val filenameSuggestion = filenameSuggestionEngine.suggest(
+            documentClassifier.classify(ocrResult.plainText).category,
+        )
         val temporaryFile = createTemporaryPdf()
             ?: return SearchablePdfPreparedExport.Failure(
                 SearchablePdfPreparationError.TEMPORARY_STORAGE_UNAVAILABLE,
@@ -130,6 +140,7 @@ class LocalSearchablePdfExportCoordinator(
                             progressListener = request.progressListener,
                             pageCount = generated.pageCount,
                             textLayerPageCount = generated.textLayerPageCount,
+                            filenameSuggestion = filenameSuggestion,
                         )
                     }
                 }
