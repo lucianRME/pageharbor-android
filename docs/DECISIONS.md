@@ -105,3 +105,14 @@ The bundled Latin model is available without a first-use model download, support
 
 Consequences:
 This is an architecture direction, not approval to add a dependency, implement OCR, alter scanning, or alter export. OCR output is sensitive document content: it must stay local to the active session, remain in memory by default rather than be retained permanently, never be logged or sent to a backend, and any temporary artifacts require explicit cleanup. Copyable text is a separate feature. Searchable-PDF generation requires a separate decision and spike before PageHarbor-owned text-layer PDF generation and validation. PageHarbor will not recreate crop, rotate, filters, deletion, or reordering that ML Kit already provides in the scanner flow. Use platform capabilities where they are strong; build only what adds distinct user value. No claim of absolute offline operation is permitted until physical-device validation verifies the selected dependency's real install and runtime behaviour.
+
+## ADR-009: Searchable PDF Composition Direction
+
+Decision:
+If searchable PDF export is approved after the `v0.4.0-dev` validation gates, create a new local PDF from scanner JPEG pages and append an invisible embedded-font text layer from engine-neutral OCR line geometry. Do not make mutation of the scanner-produced PDF the first implementation path.
+
+Rationale:
+JPEG composition gives PageHarbor one controlled coordinate system for the background image and OCR bounds, keeps scanner-PDF parser compatibility out of the critical path, and makes page size, rotation, temporary output, and cleanup explicit. The isolated PdfBox-Android prototype proved on a physical Android device that invisible embedded Unicode text can be extracted from an image PDF.
+
+Consequences:
+This does not approve a production PDF dependency or user-facing export change. A production implementation must pass current dependency/licence/security review, release-size measurement, page-rotation and JPEG-fidelity validation, multiple-viewer search/selection/copy validation, and cancellation/cleanup tests. The existing scanner PDF remains the fallback until those gates pass. All OCR geometry and prepared files remain active-session local data and must never be logged, retained as a library, or transmitted.

@@ -16,6 +16,8 @@ data class OcrPageResult(
     val pageIndex: Int,
     val text: String,
     val error: OcrPageError? = null,
+    /** Null only for an engine result that cannot safely supply positioned text yet. */
+    val layout: OcrPageLayout? = null,
 )
 
 /**

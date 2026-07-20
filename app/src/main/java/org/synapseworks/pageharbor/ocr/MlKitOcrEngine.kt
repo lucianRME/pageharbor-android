@@ -53,7 +53,33 @@ class MlKitOcrEngine : OcrEngine {
 
         return try {
             val result = Tasks.await(recognizer.process(InputImage.fromBitmap(bitmap, 0)))
-            OcrPageResult(pageIndex = pageIndex, text = result.text)
+            OcrPageResult(
+                pageIndex = pageIndex,
+                text = result.text,
+                layout = OcrPageLayout(
+                    imageWidthPx = bitmap.width,
+                    imageHeightPx = bitmap.height,
+                    // InputImage receives an upright bitmap with zero rotation. Keeping this
+                    // explicit prevents a future raw-camera input from silently changing the
+                    // searchable-PDF coordinate contract.
+                    rotationDegrees = 0,
+                    lines = result.textBlocks.flatMap { block ->
+                        block.lines.mapNotNull { line ->
+                            val bounds = line.boundingBox ?: return@mapNotNull null
+                            OcrTextLine(
+                                text = line.text,
+                                bounds = OcrTextBounds(
+                                    left = bounds.left.toFloat(),
+                                    top = bounds.top.toFloat(),
+                                    right = bounds.right.toFloat(),
+                                    bottom = bounds.bottom.toFloat(),
+                                ),
+                                confidence = null,
+                            )
+                        }
+                    },
+                ),
+            )
         } catch (_: Exception) {
             OcrPageResult(pageIndex = pageIndex, text = "", error = OcrPageError.RECOGNITION_FAILED)
         } finally {

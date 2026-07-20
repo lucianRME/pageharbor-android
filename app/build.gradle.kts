@@ -83,6 +83,8 @@ dependencies {
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.test.runner)
+    // Isolated technical-spike dependency. It is not packaged in the production APK.
+    androidTestImplementation(libs.pdfbox.android)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 

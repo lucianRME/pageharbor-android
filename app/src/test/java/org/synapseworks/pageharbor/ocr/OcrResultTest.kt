@@ -62,6 +62,45 @@ class OcrResultTest {
         assertEquals(OcrPageError.IMAGE_UNREADABLE, result.pages[2].error)
     }
 
+    @Test
+    fun layoutIsOptionalAndDoesNotChangeExistingPlainTextBehavior() {
+        val result = OcrResult(
+            pages = listOf(
+                OcrPageResult(pageIndex = 0, text = "Existing text"),
+            ),
+        )
+
+        assertEquals("Existing text", result.plainText)
+        assertEquals(null, result.pages.single().layout)
+    }
+
+    @Test
+    fun layoutPreservesOrderedUnicodeLinesWithoutPdfSpecificData() {
+        val layout = OcrPageLayout(
+            imageWidthPx = 1_200,
+            imageHeightPx = 1_600,
+            rotationDegrees = 90,
+            lines = listOf(
+                OcrTextLine(
+                    text = "Română: ă â î ș ț",
+                    bounds = OcrTextBounds(left = 12f, top = 24f, right = 300f, bottom = 56f),
+                    confidence = 0.98f,
+                ),
+                OcrTextLine(
+                    text = "Deutsch: ä ö ü ß",
+                    bounds = OcrTextBounds(left = 12f, top = 70f, right = 280f, bottom = 102f),
+                ),
+            ),
+        )
+
+        assertEquals(90, layout.rotationDegrees)
+        assertEquals(
+            listOf("Română: ă â î ș ț", "Deutsch: ä ö ü ß"),
+            layout.lines.map { it.text },
+        )
+        assertEquals(0.98f, layout.lines.first().confidence)
+    }
+
     private class FakeOcrEngine(
         private val result: OcrResult,
     ) : OcrEngine {
