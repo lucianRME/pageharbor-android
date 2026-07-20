@@ -19,7 +19,7 @@ Possible screens:
 - Scan result review.
 - Export result or completion state.
 
-Current UI uses local screen-state navigation for three simple surfaces: Home, Scan Result, and OCR Result. Scan Result owns save/share/export/OCR feedback; OCR Result owns text viewing and copy actions. This deliberately avoids Navigation Compose, bottom navigation, drawers, and tabs.
+Current UI uses local screen-state navigation for three simple surfaces: Home, Scan Result, and OCR Result. Scan Result owns save/share/export/OCR feedback, including the user-initiated searchable-PDF save flow; OCR Result owns text viewing and copy actions. This deliberately avoids Navigation Compose, bottom navigation, drawers, and tabs.
 
 Static screens should not receive ViewModels by default. A coordinator or ViewModel should be introduced only when a screen has meaningful state, asynchronous work, or platform result handling that would otherwise make the composable difficult to test or maintain.
 

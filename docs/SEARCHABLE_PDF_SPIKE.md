@@ -1,6 +1,6 @@
 # Searchable PDF Technical Spike
 
-Status: `v0.4.0-dev` PDF-generation and private-SAF-write foundation. No scan, share, JPEG-export, permission, network, or user-interface flow is changed. The generator and coordinator remain internal and caller-driven; there is no Scan Result action and existing PDF save behavior is unchanged.
+Status: `v0.4.0-dev` searchable-PDF foundation with a first Scan Result save action. It runs local OCR as needed, writes only to a user-selected SAF destination, and cleans private prepared files. Normal PDF save, share, JPEG export, permissions, network behavior, and the Home screen are unchanged.
 
 ## Problem statement
 

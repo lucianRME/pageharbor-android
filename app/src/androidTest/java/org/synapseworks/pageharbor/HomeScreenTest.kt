@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.runtime.mutableStateOf
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -16,6 +17,8 @@ import org.junit.Test
 import org.synapseworks.pageharbor.document.PageExportState
 import org.synapseworks.pageharbor.document.PdfSaveState
 import org.synapseworks.pageharbor.document.PdfShareState
+import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfSaveError
+import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfSaveState
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
 import org.synapseworks.pageharbor.ocr.OcrPageError
 import org.synapseworks.pageharbor.ocr.OcrPageResult
@@ -604,6 +607,106 @@ class HomeScreenTest {
         composeTestRule.onNodeWithText("Recognize Text").performClick()
 
         assertEquals(1, callCount)
+    }
+
+    @Test
+    fun searchablePdfSaveAppearsOnlyWhenScannedPagesExist() {
+        val pageCount = mutableStateOf(1)
+        composeTestRule.setContent {
+            PageHarborApp(scannerSpikeState = scanSummary(jpegPageCount = pageCount.value))
+        }
+
+        composeTestRule.onNodeWithText("Save searchable PDF")
+            .assertIsDisplayed()
+            .assertIsEnabled()
+
+        composeTestRule.runOnIdle { pageCount.value = 0 }
+
+        composeTestRule.onAllNodesWithText("Save searchable PDF").assertCountEquals(0)
+    }
+
+    @Test
+    fun searchablePdfSaveInvokesCallbackAndPreventsDuplicatesWhileActive() {
+        var callCount = 0
+        val state = mutableStateOf<SearchablePdfSaveState>(SearchablePdfSaveState.Idle)
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = scanSummary(jpegPageCount = 1),
+                searchablePdfSaveState = state.value,
+                onSaveSearchablePdf = { callCount += 1 },
+            )
+        }
+
+        composeTestRule.onNodeWithText("Save searchable PDF").performClick()
+        assertEquals(1, callCount)
+
+        composeTestRule.runOnIdle { state.value = SearchablePdfSaveState.ChoosingDestination }
+
+        composeTestRule.onNodeWithText("Save searchable PDF").assertIsNotEnabled()
+        composeTestRule.onNodeWithText("Preparing searchable PDF…").assertIsDisplayed()
+    }
+
+    @Test
+    fun searchablePdfSaveShowsEachProductFacingProgressState() {
+        val progressStates = listOf(
+            SearchablePdfSaveState.Preparing to "Preparing searchable PDF…",
+            SearchablePdfSaveState.Recognizing to "Recognizing text…",
+            SearchablePdfSaveState.Generating to "Generating searchable PDF…",
+            SearchablePdfSaveState.Saving to "Saving searchable PDF…",
+        )
+
+        val state = mutableStateOf(progressStates.first().first)
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = scanSummary(jpegPageCount = 1),
+                searchablePdfSaveState = state.value,
+            )
+        }
+
+        progressStates.forEach { (progressState, message) ->
+            composeTestRule.runOnIdle { state.value = progressState }
+            composeTestRule.onNodeWithText("Save searchable PDF").assertIsNotEnabled()
+            composeTestRule.onNodeWithText(message).performScrollTo().assertIsDisplayed()
+        }
+    }
+
+    @Test
+    fun searchablePdfSaveShowsSuccessCancellationAndSafeFailure() {
+        val state = mutableStateOf<SearchablePdfSaveState>(SearchablePdfSaveState.Saved)
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = scanSummary(jpegPageCount = 1),
+                searchablePdfSaveState = state.value,
+            )
+        }
+        composeTestRule.onNodeWithText("Searchable PDF saved successfully").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Save searchable PDF").assertIsEnabled()
+
+        composeTestRule.runOnIdle { state.value = SearchablePdfSaveState.Cancelled }
+        composeTestRule.onNodeWithText("Searchable PDF save cancelled.").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Save searchable PDF").assertIsEnabled()
+
+        composeTestRule.runOnIdle {
+            state.value = SearchablePdfSaveState.Error(SearchablePdfSaveError.PREPARATION_FAILED)
+        }
+        composeTestRule.onNodeWithText("Searchable PDF could not be prepared. Try again.")
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun searchablePdfSaveDoesNotChangeExistingScanResultActions() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = scanSummary(jpegPageCount = 1),
+                searchablePdfSaveState = SearchablePdfSaveState.Saving,
+            )
+        }
+
+        composeTestRule.onNodeWithText("Save PDF").assertIsEnabled()
+        composeTestRule.onNodeWithText("Share PDF").assertIsEnabled()
+        composeTestRule.onNodeWithText("Export Pages").assertIsEnabled()
+        composeTestRule.onNodeWithText("Recognize Text").assertIsEnabled()
     }
 
     @Test

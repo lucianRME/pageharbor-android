@@ -39,6 +39,16 @@ import org.synapseworks.pageharbor.document.pageExportStateAfterCancellation
 import org.synapseworks.pageharbor.document.pageExportStateAfterSuccess
 import org.synapseworks.pageharbor.document.preparePdfForSharing
 import org.synapseworks.pageharbor.document.startPageExport
+import org.synapseworks.pageharbor.document.searchablepdf.LocalSearchablePdfExportCoordinator
+import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfExportError
+import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfExportProgressListener
+import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfExportRequest
+import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfExportResult
+import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfPreparedExport
+import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfSaveError
+import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfSaveState
+import org.synapseworks.pageharbor.document.searchablepdf.isInProgress
+import org.synapseworks.pageharbor.document.searchablepdf.searchablePdfSaveStateForProgress
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
 import org.synapseworks.pageharbor.scanner.createScannerResultSummary
 import org.synapseworks.pageharbor.ui.PageHarborApp
@@ -57,10 +67,18 @@ class MainActivity : ComponentActivity() {
     private var pdfShareState: PdfShareState by mutableStateOf(PdfShareState.Idle)
     private var pageExportState: PageExportState by mutableStateOf(PageExportState.Idle)
     private var ocrUiState: OcrUiState by mutableStateOf(OcrUiState.Idle)
+    private var searchablePdfSaveState: SearchablePdfSaveState by mutableStateOf(
+        SearchablePdfSaveState.Idle,
+    )
     private var scannedPdfUri: Uri? = null
     private var scannedPageUris: List<Uri> = emptyList()
     private val ocrEngine: OcrEngine = MlKitOcrEngine()
     private var ocrJob: Job? = null
+    private val searchablePdfExportCoordinator by lazy {
+        LocalSearchablePdfExportCoordinator(this, ocrEngine)
+    }
+    private var searchablePdfPreparedExport: SearchablePdfPreparedExport.Ready? = null
+    private var searchablePdfExportJob: Job? = null
 
     private val scanLauncher = registerForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult(),
@@ -71,6 +89,7 @@ class MainActivity : ComponentActivity() {
         pdfSaveState = PdfSaveState.Idle
         pdfShareState = PdfShareState.Idle
         pageExportState = PageExportState.Idle
+        clearSearchablePdfSave()
 
         if (result.resultCode == Activity.RESULT_CANCELED) {
             scannerSpikeState = ScannerSpikeState.Cancelled
@@ -124,6 +143,48 @@ class MainActivity : ComponentActivity() {
         exportPageToDestination(currentState, destinationUri)
     }
 
+    private val createSearchablePdfDocumentLauncher = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("application/pdf"),
+    ) { destinationUri ->
+        val preparedExport = searchablePdfPreparedExport
+        if (destinationUri == null) {
+            preparedExport?.let(searchablePdfExportCoordinator::discardPreparedExport)
+            searchablePdfPreparedExport = null
+            searchablePdfSaveState = if (preparedExport == null) {
+                SearchablePdfSaveState.Idle
+            } else {
+                SearchablePdfSaveState.Cancelled
+            }
+            return@registerForActivityResult
+        }
+        if (preparedExport == null) {
+            searchablePdfSaveState = SearchablePdfSaveState.Error(
+                SearchablePdfSaveError.PREPARATION_FAILED,
+            )
+            return@registerForActivityResult
+        }
+
+        searchablePdfSaveState = SearchablePdfSaveState.Saving
+        searchablePdfExportJob = lifecycleScope.launch {
+            val result = searchablePdfExportCoordinator.writePreparedExport(preparedExport, destinationUri)
+            searchablePdfPreparedExport = null
+            searchablePdfSaveState = when (result) {
+                SearchablePdfExportResult.Success -> SearchablePdfSaveState.Saved
+                is SearchablePdfExportResult.Failure -> SearchablePdfSaveState.Error(
+                    when (result.reason) {
+                        SearchablePdfExportError.PREPARED_EXPORT_UNAVAILABLE ->
+                            SearchablePdfSaveError.PREPARATION_FAILED
+
+                        SearchablePdfExportError.DESTINATION_UNAVAILABLE ->
+                            SearchablePdfSaveError.DESTINATION_UNAVAILABLE
+
+                        SearchablePdfExportError.WRITE_FAILED -> SearchablePdfSaveError.WRITE_FAILED
+                    },
+                )
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         lifecycleScope.launch(Dispatchers.IO) {
@@ -136,8 +197,10 @@ class MainActivity : ComponentActivity() {
                 pdfShareState = pdfShareState,
                 pageExportState = pageExportState,
                 ocrUiState = ocrUiState,
+                searchablePdfSaveState = searchablePdfSaveState,
                 onScanDocument = ::launchDocumentScanner,
                 onSavePdf = ::choosePdfDestination,
+                onSaveSearchablePdf = ::saveSearchablePdf,
                 onSharePdf = ::sharePdf,
                 onExportPages = ::exportPages,
                 onRecognizeText = ::recognizeText,
@@ -150,6 +213,7 @@ class MainActivity : ComponentActivity() {
                     pdfSaveState = PdfSaveState.Idle
                     pdfShareState = PdfShareState.Idle
                     pageExportState = PageExportState.Idle
+                    clearSearchablePdfSave()
                     scannerSpikeState = ScannerSpikeState.Idle
                 },
             )
@@ -159,6 +223,7 @@ class MainActivity : ComponentActivity() {
     private fun launchDocumentScanner() {
         if (scannerSpikeState == ScannerSpikeState.Preparing) return
 
+        clearSearchablePdfSave()
         clearRecognizedText()
         scannerSpikeState = ScannerSpikeState.Preparing
 
@@ -231,6 +296,78 @@ class MainActivity : ComponentActivity() {
 
         pdfSaveState = PdfSaveState.ChoosingDestination
         createPdfDocumentLauncher.launch(getString(R.string.pdf_default_filename))
+    }
+
+    private fun saveSearchablePdf() {
+        if (searchablePdfSaveState.isInProgress()) return
+        if (scannedPageUris.isEmpty()) {
+            searchablePdfSaveState = SearchablePdfSaveState.Error(SearchablePdfSaveError.NO_PAGES)
+            return
+        }
+
+        searchablePdfPreparedExport?.let(searchablePdfExportCoordinator::discardPreparedExport)
+        searchablePdfPreparedExport = null
+        searchablePdfSaveState = SearchablePdfSaveState.Preparing
+        val existingOcrResult = (ocrUiState as? OcrUiState.Success)?.result
+        searchablePdfExportJob = lifecycleScope.launch {
+            val preparedExport = searchablePdfExportCoordinator.prepare(
+                SearchablePdfExportRequest(
+                    pageUris = scannedPageUris,
+                    ocrResult = existingOcrResult,
+                    progressListener = SearchablePdfExportProgressListener { progress ->
+                        runOnUiThread {
+                            searchablePdfSaveState = searchablePdfSaveStateForProgress(progress)
+                        }
+                    },
+                ),
+            )
+            when (preparedExport) {
+                is SearchablePdfPreparedExport.Ready -> {
+                    searchablePdfPreparedExport = preparedExport
+                    searchablePdfSaveState = SearchablePdfSaveState.ChoosingDestination
+                    try {
+                        createSearchablePdfDocumentLauncher.launch(
+                            getString(R.string.searchable_pdf_default_filename),
+                        )
+                    } catch (_: ActivityNotFoundException) {
+                        searchablePdfExportCoordinator.discardPreparedExport(preparedExport)
+                        searchablePdfPreparedExport = null
+                        searchablePdfSaveState = SearchablePdfSaveState.Error(
+                            SearchablePdfSaveError.DESTINATION_UNAVAILABLE,
+                        )
+                    } catch (_: RuntimeException) {
+                        searchablePdfExportCoordinator.discardPreparedExport(preparedExport)
+                        searchablePdfPreparedExport = null
+                        searchablePdfSaveState = SearchablePdfSaveState.Error(
+                            SearchablePdfSaveError.DESTINATION_UNAVAILABLE,
+                        )
+                    }
+                }
+
+                is SearchablePdfPreparedExport.Failure -> {
+                    searchablePdfSaveState = SearchablePdfSaveState.Error(
+                        when (preparedExport.reason) {
+                            org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfPreparationError.NO_PAGES ->
+                                SearchablePdfSaveError.NO_PAGES
+
+                            org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfPreparationError.OCR_FAILED,
+                            org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfPreparationError.OCR_RESULT_MISMATCH,
+                            org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfPreparationError.TEMPORARY_STORAGE_UNAVAILABLE,
+                            org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfPreparationError.GENERATION_FAILED,
+                            -> SearchablePdfSaveError.PREPARATION_FAILED
+                        },
+                    )
+                }
+            }
+        }
+    }
+
+    private fun clearSearchablePdfSave() {
+        searchablePdfExportJob?.cancel()
+        searchablePdfExportJob = null
+        searchablePdfPreparedExport?.let(searchablePdfExportCoordinator::discardPreparedExport)
+        searchablePdfPreparedExport = null
+        searchablePdfSaveState = SearchablePdfSaveState.Idle
     }
 
     private fun sharePdf() {
@@ -424,6 +561,11 @@ class MainActivity : ComponentActivity() {
         } catch (_: IOException) {
             // Nothing user-actionable, and paths or document details must not be logged.
         }
+    }
+
+    override fun onDestroy() {
+        clearSearchablePdfSave()
+        super.onDestroy()
     }
 
     private fun openSourceCode() {

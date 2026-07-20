@@ -24,6 +24,9 @@ import org.synapseworks.pageharbor.ocr.OcrUiError
 import org.synapseworks.pageharbor.document.PageExportState
 import org.synapseworks.pageharbor.document.PdfSaveState
 import org.synapseworks.pageharbor.document.PdfShareState
+import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfSaveError
+import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfSaveState
+import org.synapseworks.pageharbor.document.searchablepdf.isInProgress
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,8 +37,10 @@ fun ScanResultScreen(
     pdfShareState: PdfShareState,
     pageExportState: PageExportState,
     ocrUiState: OcrUiState,
+    searchablePdfSaveState: SearchablePdfSaveState,
     onBack: () -> Unit,
     onSavePdf: () -> Unit,
+    onSaveSearchablePdf: () -> Unit,
     onSharePdf: () -> Unit,
     onExportPages: () -> Unit,
     onRecognizeText: () -> Unit,
@@ -46,6 +51,7 @@ fun ScanResultScreen(
     val saving = pdfSaveState == PdfSaveState.ChoosingDestination || pdfSaveState == PdfSaveState.Saving
     val sharing = pdfShareState == PdfShareState.Preparing
     val exporting = pageExportState is PageExportState.ChoosingDestination || pageExportState is PageExportState.Exporting
+    val savingSearchablePdf = searchablePdfSaveState.isInProgress()
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.scan_result_title)) }, navigationIcon = {
         TextButton(onClick = onBack) { Text(stringResource(R.string.ocr_back_action)) }
     }) }) { padding ->
@@ -56,6 +62,9 @@ fun ScanResultScreen(
             Text(stringResource(R.string.scan_complete), style = androidx.compose.material3.MaterialTheme.typography.headlineMedium)
             Text(stringResource(if (result.jpegPageCount == 1) R.string.scan_page_ready else R.string.scan_pages_ready, result.jpegPageCount))
             if (result.hasPdf) Button(modifier = Modifier.fillMaxWidth(), enabled = !saving, onClick = onSavePdf) { Text(stringResource(R.string.pdf_save_action)) }
+            if (result.jpegPageCount > 0) OutlinedButton(modifier = Modifier.fillMaxWidth(), enabled = !savingSearchablePdf, onClick = onSaveSearchablePdf) {
+                Text(stringResource(R.string.searchable_pdf_save_action))
+            }
             if (result.hasPdf) OutlinedButton(modifier = Modifier.fillMaxWidth(), enabled = !sharing, onClick = onSharePdf) { Text(stringResource(R.string.pdf_share_action)) }
             if (result.jpegPageCount > 0) OutlinedButton(modifier = Modifier.fillMaxWidth(), enabled = !exporting, onClick = onExportPages) { Text(stringResource(R.string.page_export_action)) }
             if (result.jpegPageCount > 0) OutlinedButton(modifier = Modifier.fillMaxWidth(), enabled = ocrUiState != OcrUiState.Recognizing, onClick = onRecognizeText) {
@@ -64,6 +73,35 @@ fun ScanResultScreen(
             if (ocrUiState is OcrUiState.Success) TextButton(onClick = onViewRecognizedText) { Text(stringResource(R.string.ocr_view_action)) }
             if (saving) Text(stringResource(R.string.pdf_save_progress))
             if (pdfSaveState == PdfSaveState.Saved) Text(stringResource(R.string.pdf_save_success))
+            when (searchablePdfSaveState) {
+                SearchablePdfSaveState.Preparing,
+                SearchablePdfSaveState.ChoosingDestination,
+                -> Text(stringResource(R.string.searchable_pdf_preparing_progress))
+
+                SearchablePdfSaveState.Recognizing -> Text(stringResource(R.string.searchable_pdf_recognizing_progress))
+                SearchablePdfSaveState.Generating -> Text(stringResource(R.string.searchable_pdf_generating_progress))
+                SearchablePdfSaveState.Saving -> Text(stringResource(R.string.searchable_pdf_saving_progress))
+                SearchablePdfSaveState.Saved -> Text(stringResource(R.string.searchable_pdf_save_success))
+                SearchablePdfSaveState.Cancelled -> Text(stringResource(R.string.searchable_pdf_cancelled))
+                SearchablePdfSaveState.Idle,
+                -> Unit
+
+                is SearchablePdfSaveState.Error -> Text(
+                    stringResource(
+                        when (searchablePdfSaveState.reason) {
+                            SearchablePdfSaveError.NO_PAGES -> R.string.searchable_pdf_error_no_pages
+                            SearchablePdfSaveError.PREPARATION_FAILED ->
+                                R.string.searchable_pdf_error_preparation_failed
+
+                            SearchablePdfSaveError.DESTINATION_UNAVAILABLE ->
+                                R.string.searchable_pdf_error_destination_unavailable
+
+                            SearchablePdfSaveError.WRITE_FAILED ->
+                                R.string.searchable_pdf_error_write_failed
+                        },
+                    ),
+                )
+            }
             if (sharing) Text(stringResource(R.string.pdf_share_progress))
             if (pageExportState is PageExportState.Cancelled) Text(stringResource(R.string.page_export_cancelled))
             if (pageExportState is PageExportState.Completed) Text(stringResource(R.string.page_export_success))

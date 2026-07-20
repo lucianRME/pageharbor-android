@@ -19,6 +19,8 @@ import org.synapseworks.pageharbor.document.PdfExportResult
 import org.synapseworks.pageharbor.document.PdfSaveState
 import org.synapseworks.pageharbor.document.PdfShareError
 import org.synapseworks.pageharbor.document.PdfShareState
+import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfSaveError
+import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfSaveState
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
 import org.synapseworks.pageharbor.ocr.OcrUiState
 import org.synapseworks.pageharbor.ui.home.HomeScreen
@@ -33,8 +35,10 @@ fun PageHarborApp(
     pdfShareState: PdfShareState = PdfShareState.Idle,
     pageExportState: PageExportState = PageExportState.Idle,
     ocrUiState: OcrUiState = OcrUiState.Idle,
+    searchablePdfSaveState: SearchablePdfSaveState = SearchablePdfSaveState.Idle,
     onScanDocument: () -> Unit = {},
     onSavePdf: () -> Unit = {},
+    onSaveSearchablePdf: () -> Unit = {},
     onSharePdf: () -> Unit = {},
     onExportPages: () -> Unit = {},
     onRecognizeText: () -> Unit = {},
@@ -56,6 +60,11 @@ fun PageHarborApp(
         val pdfSourceMissingMessage = stringResource(R.string.pdf_save_source_missing)
         val pdfDestinationUnavailableMessage = stringResource(R.string.pdf_save_destination_unavailable)
         val pdfWriteFailedMessage = stringResource(R.string.pdf_save_failed)
+        val searchablePdfNoPagesMessage = stringResource(R.string.searchable_pdf_error_no_pages)
+        val searchablePdfPreparationFailedMessage = stringResource(R.string.searchable_pdf_error_preparation_failed)
+        val searchablePdfDestinationUnavailableMessage =
+            stringResource(R.string.searchable_pdf_error_destination_unavailable)
+        val searchablePdfWriteFailedMessage = stringResource(R.string.searchable_pdf_error_write_failed)
         val pdfShareNoPdfMessage = stringResource(R.string.pdf_share_no_pdf)
         val pdfShareTargetUnavailableMessage = stringResource(R.string.pdf_share_target_unavailable)
         val pdfShareInvalidUriMessage = stringResource(R.string.pdf_share_invalid_uri)
@@ -102,8 +111,10 @@ fun PageHarborApp(
             pdfShareState = pdfShareState,
             pageExportState = pageExportState,
             ocrUiState = ocrUiState,
+            searchablePdfSaveState = searchablePdfSaveState,
             onBack = { screen = AppScreen.Home },
             onSavePdf = onSavePdf,
+            onSaveSearchablePdf = onSaveSearchablePdf,
             onSharePdf = onSharePdf,
             onExportPages = onExportPages,
             onRecognizeText = onRecognizeText,
@@ -189,6 +200,31 @@ fun PageHarborApp(
 
                 PdfShareState.Idle,
                 PdfShareState.Preparing,
+                -> null
+            }
+
+            if (message != null) {
+                snackbarHostState.showSnackbar(message)
+            }
+        }
+
+        LaunchedEffect(searchablePdfSaveState) {
+            val message = when (searchablePdfSaveState) {
+                is SearchablePdfSaveState.Error -> when (searchablePdfSaveState.reason) {
+                    SearchablePdfSaveError.NO_PAGES -> searchablePdfNoPagesMessage
+                    SearchablePdfSaveError.PREPARATION_FAILED -> searchablePdfPreparationFailedMessage
+                    SearchablePdfSaveError.DESTINATION_UNAVAILABLE -> searchablePdfDestinationUnavailableMessage
+                    SearchablePdfSaveError.WRITE_FAILED -> searchablePdfWriteFailedMessage
+                }
+
+                SearchablePdfSaveState.Idle,
+                SearchablePdfSaveState.Preparing,
+                SearchablePdfSaveState.Recognizing,
+                SearchablePdfSaveState.Generating,
+                SearchablePdfSaveState.ChoosingDestination,
+                SearchablePdfSaveState.Saving,
+                SearchablePdfSaveState.Saved,
+                SearchablePdfSaveState.Cancelled,
                 -> null
             }
 

@@ -47,6 +47,18 @@
     <string name="pdf_save_source_missing">PDF could not be saved because the scan result is no longer available.</string>
     <string name="pdf_save_destination_unavailable">Selected destination is unavailable.</string>
     <string name="pdf_save_failed">PDF could not be saved. Try another destination.</string>
+    <string name="searchable_pdf_save_action">Save searchable PDF</string>
+    <string name="searchable_pdf_preparing_progress">Preparing searchable PDF…</string>
+    <string name="searchable_pdf_recognizing_progress">Recognizing text…</string>
+    <string name="searchable_pdf_generating_progress">Generating searchable PDF…</string>
+    <string name="searchable_pdf_saving_progress">Saving searchable PDF…</string>
+    <string name="searchable_pdf_save_success">Searchable PDF saved successfully</string>
+    <string name="searchable_pdf_cancelled">Searchable PDF save cancelled.</string>
+    <string name="searchable_pdf_error_no_pages">No scanned pages are available for a searchable PDF.</string>
+    <string name="searchable_pdf_error_preparation_failed">Searchable PDF could not be prepared. Try again.</string>
+    <string name="searchable_pdf_error_destination_unavailable">Selected destination is unavailable.</string>
+    <string name="searchable_pdf_error_write_failed">Searchable PDF could not be saved. Try another destination.</string>
+    <string name="searchable_pdf_default_filename" translatable="false">Searchable-Document.pdf</string>
     <string name="pdf_default_filename" translatable="false">Document.pdf</string>
     <string name="pdf_share_action">Share PDF</string>
     <string name="pdf_share_progress">Preparing share…</string>
