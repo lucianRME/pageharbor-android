@@ -116,3 +116,14 @@ JPEG composition gives PageHarbor one controlled coordinate system for the backg
 
 Consequences:
 The completed flow invokes a UI-independent coordinator to run or consume local OCR, prepare a private-cache searchable PDF, and copy it to a user-selected SAF URI. It does not change the existing scanner-PDF save, share, or JPEG-export flows. The coordinator deletes prepared PDFs after write success, write failure, cancellation, or explicit destination-selection cancellation. All OCR geometry and prepared files remain active-session local data and must never be logged, retained as a library, or transmitted. PageHarbor performs no cloud OCR and operates no proprietary backend. Chrome desktop validation is complete; Adobe Acrobat and managed Google Drive viewer validation remain pending because those viewers were unavailable or constrained in the validation environment.
+
+## ADR-010: Deterministic Local Smart Document Suggestions
+
+Decision:
+For the planned `v0.5.0-dev` smart-document-output work, use a deterministic, local rule engine over the active in-memory OCR result. It may suggest only broad categories and category-based PDF filenames; it must not copy arbitrary OCR content into names or metadata. Do not add a local model, cloud service, persistence, analytics, or an internal document index.
+
+Rationale:
+The initial value is a safe save-name suggestion for a small set of categories—invoice, receipt, letter, form, or unknown—across English, German, and Romanian. Fixed keyword and structure rules are explainable, testable, dependency-free, and work with the existing offline OCR boundary. A model would add binary size, update, evaluation, performance, false-positive, and privacy-review costs without enough demonstrated value for this narrow scope.
+
+Consequences:
+The rule engine must operate only for the active user-initiated export and discard input and intermediate text when it returns. Its result uses non-content reason enums and a non-probabilistic confidence level. The safe fallback is `document.pdf`; the Android SAF picker remains authoritative for final naming and duplicate handling. Optional PDF metadata must be off by default, generic rather than OCR-derived, and require explicit user choice in a future product flow. This decision authorizes neither UI nor production implementation; those require separate scope, test, privacy, and device-validation work.
