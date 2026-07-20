@@ -4,7 +4,7 @@ PageHarbor is an open-source, privacy-first Android document scanner. The app is
 
 ## Current status
 
-The completed development milestone is `v0.4.0-dev`. PageHarbor supports offline scanning, PDF save and share, JPEG page export, explicit on-device Latin OCR with in-memory selectable text and Copy Text, and searchable-PDF generation. Searchable PDFs are rebuilt locally from scanned JPEG pages with an invisible OCR text layer, then saved through the Android system file picker. The UI is organized into focused Home, Scan Result, and OCR Result surfaces. ML Kit's scanner provides crop, rotate, filters, and multi-page review; PageHarbor does not retain an internal document library.
+The completed development milestone is `v0.5.0-dev`. PageHarbor supports local document scanning, PDF save and share, JPEG page export, explicit on-device Latin OCR with in-memory selectable text and Copy Text, searchable-PDF generation, and deterministic category-only filename suggestions for searchable-PDF saves. Searchable PDFs are rebuilt locally from scanned JPEG pages with an invisible OCR text layer, then saved through the Android system file picker. The user can edit the suggested name; the SAF provider remains authoritative for the final name and destination. The UI is organized into focused Home, Scan Result, and OCR Result surfaces. ML Kit's scanner provides crop, rotate, filters, and multi-page review; PageHarbor does not retain an internal document library.
 
 See [ROADMAP.md](ROADMAP.md) for the current project roadmap.
 
@@ -25,6 +25,7 @@ See [ROADMAP.md](ROADMAP.md) for the current project roadmap.
 - Export scanned pages individually as JPEG through SAF
 - Run OCR locally, review in-memory recognized text, and copy text explicitly
 - Generate a local searchable PDF with an invisible Unicode OCR text layer and save it through SAF
+- Suggest a safe searchable-PDF filename from a broad local category: invoice, receipt, letter, form, or unknown
 
 ## Planned technology stack
 
@@ -35,7 +36,7 @@ See [ROADMAP.md](ROADMAP.md) for the current project roadmap.
 - ML Kit Document Scanner
 - Android Storage Access Framework
 
-PageHarbor's privacy-first architecture keeps document processing on the device and lets users choose where files are saved or shared. Cloud providers such as Google Drive or OneDrive may appear only as destinations through the Android system file picker. PageHarbor does not operate proprietary cloud storage, use cloud OCR or AI services, or directly access those services.
+PageHarbor's privacy-first architecture keeps document processing on the device and lets users choose where files are saved or shared. Filename suggestions never contain OCR-derived names, dates, amounts, identifiers, addresses, or other document values. PDF metadata is intentionally excluded from `v0.5.0-dev`. Cloud providers such as Google Drive or OneDrive may appear only as destinations through the Android system file picker. PageHarbor does not operate proprietary cloud storage, use cloud OCR or AI services, or directly access those services.
 
 ## Local development
 

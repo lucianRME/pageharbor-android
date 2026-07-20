@@ -1,6 +1,6 @@
 # Smart Document Output Technical Spike
 
-Status: investigation for `v0.5.0-dev`; no production feature, UI, dependency, or persistence is introduced by this document.
+Status: `v0.5.0-dev` implementation and validation record. Core PageHarbor smart-output behavior is validated. External provider and device-accessibility checks remain documented validation gaps.
 
 ## Problem
 
@@ -14,21 +14,21 @@ Use a deterministic local rule engine as the first smart-output approach. It sho
 
 The output is a suggestion, never an automatic rename, overwrite, document index, or persistent record. The system save picker remains the user-controlled authority for the final name and destination.
 
-## Proposed architecture
+## Implemented architecture
 
-The future implementation should add one UI-independent `SmartOutputSuggester` at the document-processing boundary. It receives only the active-session, ordered OCR text already held in memory; it does not receive a file path, destination URI, account information, device identifier, or history of prior scans.
+The implemented foundation uses two UI-independent components at the document-processing boundary: `DocumentClassifier` and `FilenameSuggestionEngine`. The classifier receives only active-session OCR text already held in memory. The filename engine receives only the resulting broad category; it cannot receive OCR text, a file path, destination URI, account information, device identifier, or history of prior scans.
 
-It returns a small, content-free result:
+The two foundation components return small, content-free results:
 
 | Field | Purpose |
 | --- | --- |
 | Category | `invoice`, `receipt`, `letter`, `form`, or `unknown`. |
 | Suggested filename | A conservative PDF name derived from the category, such as `invoice.pdf`. |
 | Confidence | Rule outcome only: `none`, `low`, `medium`, or `high`; it is not a probability. |
-| Reasons | Enumerated rule identifiers, never matched OCR snippets or document values. |
-| Optional metadata suggestion | Generic category-based PDF metadata, available only when a future user-facing flow explicitly opts in. |
+| Reasons | Not exposed in the implemented foundation. A future reason API, if needed, may use only enums and never matched OCR snippets or document values. |
+| Optional metadata suggestion | Not implemented. It remains a future option only after an explicit user-facing decision. |
 
-The future save coordinator may pass the filename to `ActivityResultContracts.CreateDocument("application/pdf")` as the initial title. Android documents that the user may change that title, and that `ACTION_CREATE_DOCUMENT` cannot overwrite an existing file; the picker/provider handles a same-name collision, commonly by appending a number. PageHarbor must not enumerate folders, inspect existing names, create its own counters, or persist collision state. [Android SAF documentation](https://developer.android.com/training/data-storage/shared/documents-files?hl=en)
+The searchable-PDF export coordinator classifies the active OCR result, passes only its category to the filename engine, and supplies the resulting filename to `ActivityResultContracts.CreateDocument("application/pdf")` as an initial title. Android documents that the user may change that title, and that `ACTION_CREATE_DOCUMENT` cannot overwrite an existing file; the picker/provider handles a same-name collision, commonly by appending a number. PageHarbor does not enumerate folders, inspect existing names, create its own counters, or persist collision state. [Android SAF documentation](https://developer.android.com/training/data-storage/shared/documents-files?hl=en)
 
 ## Rule engine design
 
@@ -38,7 +38,7 @@ The future save coordinator may pass the filename to `ActivityResultContracts.Cr
 2. Normalize each line for matching with Unicode NFKC, Unicode-aware lowercasing, whitespace collapse, and a diacritic-folded comparison form. Keep the original in-memory OCR text unchanged.
 3. Test immutable per-language keyword and structure rules. Count only distinct evidence kinds; repeated matches do not inflate confidence.
 4. Resolve one category deterministically: highest score wins; a tie, conflicting strong categories, or insufficient evidence produces `unknown`.
-5. Produce a category-only filename and, only after explicit future user consent, generic PDF metadata. Discard all intermediate normalized text when the call returns.
+5. Produce a category-only filename. PDF metadata is intentionally not produced in v0.5.0-dev; it remains a future, opt-in consideration. Discard all intermediate normalized text when the call returns.
 
 ### Category evidence
 
@@ -63,7 +63,7 @@ The keyword lists are fixed application resources, versioned with code, and cont
 | `medium` | A category meets the minimum distinct-evidence threshold. | Category filename; present it as a suggestion. |
 | `high` | A category has a high-specificity marker and independent supporting evidence without conflict. | Category filename; still editable in SAF. |
 
-Reasons are safe enums such as `INVOICE_LABEL`, `TAX_MARKER`, `TOTAL_MARKER`, `LETTER_GREETING`, `FORM_FIELD_PATTERN`, `CONFLICTING_CATEGORIES`, and `OCR_UNAVAILABLE`. They must not carry the matched word, a line, an amount, a reference, a name, or a page index. Tests may use synthetic non-sensitive fixtures only.
+Any future reasons must use safe enums such as `INVOICE_LABEL`, `TAX_MARKER`, `TOTAL_MARKER`, `LETTER_GREETING`, `FORM_FIELD_PATTERN`, `CONFLICTING_CATEGORIES`, and `OCR_UNAVAILABLE`. They must not carry the matched word, a line, an amount, a reference, a name, or a page index. Tests may use synthetic non-sensitive fixtures only.
 
 ## Filename safety and Unicode
 
@@ -128,7 +128,25 @@ Rule-based classification will miss unfamiliar layouts, mixed-language documents
 
 A future local model could improve semantic classification and title extraction, but it would require a model binary, version/update policy, representative multilingual evaluation corpus, false-positive and privacy review, performance/size validation, and an explanation policy. It would still need the same strict filename sanitizer and safe fallback. For the initial four categories, deterministic rules are explainable, testable, dependency-free, and sufficient. Reconsider a local model only if measured rule coverage on consented, non-retained test documents shows a material user benefit that generic category names cannot provide. A cloud model remains out of scope.
 
-## Implementation plan
+## Implementation outcome
+
+- Implemented a pure Kotlin `DocumentClassifier` with the five documented categories, non-probabilistic `none`, `low`, `medium`, and `high` confidence, Unicode normalization, and immutable English, German, and Romanian rules.
+- Implemented a category-only `FilenameSuggestionEngine` with fixed ASCII outputs: `invoice.pdf`, `receipt.pdf`, `letter.pdf`, `form.pdf`, and `document.pdf`.
+- Integrated the suggestion only into the searchable-PDF `ACTION_CREATE_DOCUMENT` flow. Normal PDF save, share, JPEG export, OCR, and Copy Text do not use it.
+- Kept the system picker and the user-edited destination authoritative. The app stores no final filename or duplicate state.
+- Did not implement optional PDF metadata, title extraction, new categories, a model, cloud processing, networking, persistence, analytics, or document history.
+
+## Validation record — 2026-07-20
+
+Automated validation passed for the deterministic rule engine, filename safety, and the existing export-flow regression coverage. The unit fixtures cover clear English, German, and Romanian invoices; multilingual receipts, letters, and forms; mixed-language evidence; weak, repeated, conflicting, punctuation-heavy, malformed, long, and path-like OCR input; and category-only filename mappings, suffix, invalid-character, fallback, Unicode-boundary, and determinism behavior.
+
+Physical validation on a Samsung SM-S938B running Android 16 completed the installed-app launch, Home action target, and scanner-entry checks. The system scanner opened without capture and exposed accessible close, gallery-import, capture, and mode controls. Connected instrumentation completed 74 of 74 tests with zero failures, errors, or skips on that device, including searchable-PDF category-suggestion, user-edited-destination, cleanup, cancellation, and regression tests.
+
+Samsung validation confirmed `invoice.pdf`, `receipt.pdf`, `letter.pdf`, `form.pdf`, and `document.pdf` in independent sessions, a user-edited SAF filename override, and cancellation returning to Scan Result with retry available. No PageHarbor defect was observed.
+
+The following are documented validation gaps, not known product defects: a searchable-PDF open/search smoke was not repeated after temporary non-sensitive output was cleaned up; spoken TalkBack and 200% font checks were unavailable; alternate SAF providers, Google Drive, and duplicate-name behavior were unavailable; and Adobe/Google Drive viewer checks remain outside this milestone's validated scope. PDF metadata remains intentionally excluded.
+
+## Historical implementation plan
 
 1. Add pure Kotlin rule-engine tests first, using synthetic English, German, Romanian, mixed-language, malformed-Unicode, invalid-character, overlength, tie, and empty-OCR fixtures.
 2. Implement the narrow in-memory suggester and safe result/reason types with no Android storage, network, or UI dependency.

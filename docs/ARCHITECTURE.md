@@ -44,6 +44,7 @@ Future platform integrations should have narrow responsibilities:
 - PDF generator: prepares a PDF locally from scanned page data.
 - Searchable-PDF generator: rebuilds a PDF locally from active-session JPEG page streams and engine-neutral OCR geometry, embedding an invisible Unicode text layer.
 - Searchable-PDF export coordinator: combines active-session page URIs and local OCR, owns a prepared private-cache PDF, copies it to a caller-selected SAF destination, and deletes it after use, failure, or cancellation.
+- Smart-output boundary: active in-memory OCR text flows to `DocumentClassifier`, then only its `DocumentCategory` flows to `FilenameSuggestionEngine`, which supplies a fixed safe category-only suggestion to the searchable-PDF SAF picker. The user confirms or edits that value; the provider controls the final destination and name. This boundary retains neither OCR text nor filename history, adds no PDF metadata, and has no network or backend dependency.
 - Temporary file manager: owns temporary file creation, lifetime, and cleanup.
 - File export writer: writes a prepared document to the user-selected destination.
 - Android share launcher: starts the system share sheet for a prepared or saved PDF.
@@ -83,6 +84,7 @@ Implementation may simplify this model where appropriate. For example, cancellat
 - Document content should not be stored in long-lived global state.
 - Scanner-specific result types should not leak throughout the application.
 - PDF and file-export logic should remain independent of screen rendering.
+- OCR text must not cross from classification into the filename-suggestion API; only the broad category may do so.
 - Android Context should be passed only where platform APIs require it.
 - Avoid service locators and global mutable singletons.
 - Avoid Clean Architecture ceremony that does not provide practical value.

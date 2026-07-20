@@ -49,13 +49,22 @@ PageHarbor intentionally relies on ML Kit for scanner editing capabilities rathe
 
 Searchable-PDF generation remains local to the active scan session. It does not add cloud OCR, a proprietary backend, an internal document library, or automatic cloud sync. Adobe Acrobat and managed Google Drive viewer validation remain pending because those viewers were unavailable or constrained in the validation environment.
 
-### `v0.5.0-dev` — Planned
+### `v0.5.0-dev` — Smart Document Output
 
-Planned scope only; no implementation is committed by this roadmap:
+Completed:
 
-- Smart document output.
-- Deterministic filename suggestions.
-- Improved document metadata.
+- Deterministic local document classification for invoice, receipt, letter, form, and unknown categories.
+- Unicode-aware English, German, and Romanian matching with conservative unknown fallback.
+- Privacy-preserving category-only filename suggestions for searchable-PDF SAF export.
+- User-editable suggested filename passed only to the system picker; no duplicate tracking, filename history, metadata, or OCR-derived filename content.
+- Samsung manual validation of all five suggested filenames, user filename override, SAF cancellation, and retry behavior.
+- Privacy and automated validation, including 74 passing connected tests with no failures, errors, or skips.
+
+PDF metadata was intentionally excluded from `v0.5.0-dev`. Alternate SAF-provider behavior, duplicate-name provider behavior, spoken TalkBack verification, 200% font verification, and external Adobe/Google Drive viewer checks remain documented validation gaps, not known product defects.
+
+### `v0.6.0-dev` — Planned
+
+Planned scope only; no implementation is committed by this roadmap.
 
 ## Planned MVP
 

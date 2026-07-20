@@ -6,12 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.5.0-dev]
+
 ### Added
 
-- Added a deterministic, local-only document classifier foundation for active-session OCR text, with broad invoice, receipt, letter, form, and unknown categories.
-- Added Unicode-aware English, German, and Romanian rule matching with conservative confidence and conflict handling; no OCR content is retained or logged.
-- Added a deterministic category-only PDF filename suggestion foundation with safe fixed names and bounded, internal sanitizer coverage for future expansion.
-- Added safe category-only filename suggestions to the searchable-PDF SAF save flow; the system picker remains editable and existing PDF save behavior is unchanged.
+- Added deterministic local English, German, and Romanian classification for invoice, receipt, letter, form, and unknown categories, with conservative unknown fallback.
+- Added privacy-safe category-only searchable-PDF filename suggestions and user-editable SAF initial titles.
+
+### Changed
+
+- Integrated suggestions only with searchable-PDF SAF export; normal PDF save, sharing, JPEG export, OCR, and Copy Text remain unchanged.
+- Validated all category suggestions, user filename override, cancellation/retry, privacy boundaries, and 74 passing connected tests on Samsung Android 16.
+
+### Known limitations
+
+- Alternate provider and duplicate-name behavior, spoken TalkBack, 200% font, and external Adobe/Google Drive viewer checks remain validation gaps. They are not known product defects.
 
 ## [0.4.0-dev]
 
