@@ -36,13 +36,26 @@ The current UI keeps Home focused on starting a scan. Scan Result owns export an
 
 PageHarbor intentionally relies on ML Kit for scanner editing capabilities rather than duplicating crop, rotate, filters, page deletion, or reordering. Use platform capabilities where they are strong. Build only what adds distinct user value.
 
-### `v0.4.0-dev` — Planned work
+### `v0.4.0-dev` — Searchable PDF
 
-- Searchable PDF.
-- Smart filename.
-- Current-document OCR search.
-- OCR highlighting.
-- Future document organization.
+- OCR geometry captured in an engine-neutral layout model.
+- Local searchable-PDF generator that rebuilds pages from JPEG images.
+- Invisible Unicode OCR text layer with embedded font support.
+- Unicode extraction and selection validation for English, Romanian, and German fixtures.
+- Local export orchestration, including OCR, generation, write stages, cancellation, and private-cache cleanup.
+- Save searchable PDFs through the Android Storage Access Framework.
+- User-facing Scan Result flow for saving a searchable PDF.
+- Android and desktop Chrome compatibility validation, plus performance smoke measurements.
+
+Searchable-PDF generation remains local to the active scan session. It does not add cloud OCR, a proprietary backend, an internal document library, or automatic cloud sync. Adobe Acrobat and managed Google Drive viewer validation remain pending because those viewers were unavailable or constrained in the validation environment.
+
+### `v0.5.0-dev` — Planned
+
+Planned scope only; no implementation is committed by this roadmap:
+
+- Smart document output.
+- Deterministic filename suggestions.
+- Improved document metadata.
 
 ## Planned MVP
 
@@ -55,7 +68,6 @@ PageHarbor intentionally relies on ML Kit for scanner editing capabilities rathe
 
 These are non-committed possibilities:
 
-- Searchable PDFs.
 - Document organization.
 - Additional privacy-preserving features.
 
@@ -68,6 +80,5 @@ These are non-committed possibilities:
 - Analytics.
 - Subscriptions.
 - Internal permanent document library.
-- Searchable PDF in `v0.3.0-dev`.
-- Smart naming in `v0.3.0-dev`.
-- Document search or a library in `v0.3.0-dev`.
+- Smart document output, deterministic filename suggestions, or improved metadata in `v0.4.0-dev`.
+- Document search or an internal library in `v0.4.0-dev`.

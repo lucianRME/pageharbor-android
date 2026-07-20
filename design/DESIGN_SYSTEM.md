@@ -98,4 +98,4 @@ The PageHarbor brand mark is custom. It should represent the product identity an
 
 ## Action hierarchy
 
-Use filled buttons for Scan document, Save PDF, and Copy text; outlined buttons for Share PDF, Export Pages, Recognize Text, and Scan Again; and text buttons for Privacy, About, clear, and discard actions. Normal scan UI uses product copy such as “Scan complete” and page-ready summaries, never scanner diagnostics.
+Use filled buttons for Scan document, Save PDF, and Copy text; outlined buttons for Save Searchable PDF, Share PDF, Export Pages, Recognize Text, and Scan Again; and text buttons for Privacy, About, clear, and discard actions. Searchable-PDF progress should name the current local stage—recognizing text, generating PDF, or saving—without exposing document content or file paths. Normal scan UI uses product copy such as “Scan complete” and page-ready summaries, never scanner diagnostics.

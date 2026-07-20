@@ -2,7 +2,7 @@
 
 PageHarbor should use a minimal architecture for the MVP. The goal is clear ownership of UI, document handling, platform integrations, and cleanup without adding framework ceremony before the scanner and export behavior are validated.
 
-This document is guidance for future implementation. It does not introduce source code or require specific class names.
+This document records the implemented MVP architecture and guidance for narrowly scoped future work. It does not require specific class names.
 
 ## UI Layer
 
@@ -42,7 +42,8 @@ Future platform integrations should have narrow responsibilities:
 
 - Document scanner adapter: launches the selected scanner and converts scanner-specific results into PageHarbor concepts.
 - PDF generator: prepares a PDF locally from scanned page data.
-- Searchable-PDF export coordinator: combines active-session page URIs and local OCR, owns a prepared private-cache PDF, and copies it to a caller-selected SAF destination.
+- Searchable-PDF generator: rebuilds a PDF locally from active-session JPEG page streams and engine-neutral OCR geometry, embedding an invisible Unicode text layer.
+- Searchable-PDF export coordinator: combines active-session page URIs and local OCR, owns a prepared private-cache PDF, copies it to a caller-selected SAF destination, and deletes it after use, failure, or cancellation.
 - Temporary file manager: owns temporary file creation, lifetime, and cleanup.
 - File export writer: writes a prepared document to the user-selected destination.
 - Android share launcher: starts the system share sheet for a prepared or saved PDF.
@@ -53,7 +54,7 @@ Platform APIs and third-party APIs should be isolated behind small components on
 
 - ScanSession: represents an active scan workflow and the temporary resources associated with it.
 - ScannedPage: represents one captured page returned by the scanner in a form PageHarbor can review or export.
-- PreparedDocument: represents a locally prepared export, such as a generated PDF awaiting save or share.
+- PreparedDocument: represents a locally prepared export, such as a generated searchable PDF awaiting a SAF write.
 - ExportResult: records whether a save or share preparation completed, was cancelled, or failed.
 - ScanError: describes scanner startup, cancellation, availability, or result errors without document content.
 - ExportError: describes PDF generation or file writing failures without file paths or document content.
@@ -90,6 +91,6 @@ Implementation may simplify this model where appropriate. For example, cancellat
 
 - Use Compose UI tests for visible states and user actions.
 - Use unit tests for state transitions and error handling.
-- Use integration tests for temporary files and PDF generation where practical.
+- Use integration tests for temporary files, searchable-PDF generation, Unicode text extraction, cleanup, cancellation, and SAF export where practical.
 - Use instrumentation tests for Storage Access Framework and scanner integration where possible.
 - Manually validate scanner, save, share, cancellation, and cleanup behavior on at least one physical device before release.
