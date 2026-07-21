@@ -1,6 +1,7 @@
 package org.synapseworks.pageharbor.ui
 
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -46,8 +47,9 @@ fun PageHarborApp(
     onCopyRecognizedText: ((String) -> Unit)? = null,
     onViewSourceCode: () -> Unit = {},
     onClearScanResult: () -> Unit = {},
+    darkTheme: Boolean = isSystemInDarkTheme(),
 ) {
-    PageHarborTheme {
+    PageHarborTheme(darkTheme = darkTheme) {
         var screen by remember { mutableStateOf(AppScreen.Home) }
         val snackbarHostState = remember { SnackbarHostState() }
         val coroutineScope = rememberCoroutineScope()

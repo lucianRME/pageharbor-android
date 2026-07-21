@@ -62,9 +62,16 @@ Completed:
 
 PDF metadata was intentionally excluded from `v0.5.0-dev`. Alternate SAF-provider behavior, duplicate-name provider behavior, spoken TalkBack verification, 200% font verification, and external Adobe/Google Drive viewer checks remain documented validation gaps, not known product defects.
 
-### `v0.6.0-dev` — Planned
+### `v0.6.0-dev` — In progress
 
-Planned scope only; no implementation is committed by this roadmap.
+Current scope is limited to product maturity across the existing Home, Scan Result, and OCR Result surfaces:
+
+- Accessibility semantics, including headings and accessible status feedback.
+- Responsive small-screen, landscape, and large-font action reachability.
+- Dark-theme readability and existing Material action hierarchy.
+- Consistent product-facing copy and cancellation/error feedback.
+
+This milestone does not add product features, navigation, storage, permissions, metadata, document categories, cloud services, or analytics. Manual Samsung accessibility and layout validation remains in progress; this milestone is not complete.
 
 ## Planned MVP
 

@@ -5,11 +5,21 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -468,7 +478,7 @@ class HomeScreenTest {
             )
         }
 
-        composeTestRule.onNodeWithText("Clear scan result").performClick()
+        composeTestRule.onNodeWithText("Discard").performClick()
 
         assertEquals(1, clearClickCount)
     }
@@ -764,7 +774,7 @@ class HomeScreenTest {
         composeTestRule.onNodeWithText("No text was recognized in this scan.").assertIsDisplayed()
         composeTestRule.onAllNodesWithText("Copy text").assertCountEquals(0)
         composeTestRule.onNodeWithText("Recognize Again").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Clear recognized text").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Clear").assertIsDisplayed()
     }
 
     @Test
@@ -808,7 +818,7 @@ class HomeScreenTest {
         }
 
         composeTestRule.onNodeWithText("View recognized text").performScrollTo().performClick()
-        composeTestRule.onNodeWithText("Clear recognized text").performClick()
+        composeTestRule.onNodeWithText("Clear").performClick()
 
         assertEquals(1, clearCallCount)
         composeTestRule.onNodeWithText("Save PDF").assertIsEnabled()
@@ -834,6 +844,66 @@ class HomeScreenTest {
 
         assertEquals("Copy me", copiedText)
         composeTestRule.onNodeWithText("Text copied").assertIsDisplayed()
+    }
+
+    @Test
+    fun screenTitlesAreExposedAsHeadings() {
+        composeTestRule.setContent {
+            PageHarborApp(scannerSpikeState = scanSummary(jpegPageCount = 1))
+        }
+
+        composeTestRule.onNode(
+            SemanticsMatcher.expectValue(SemanticsProperties.Heading, Unit)
+                .and(hasText("Scanned document")),
+        ).assertIsDisplayed()
+        composeTestRule.onNode(
+            SemanticsMatcher.expectValue(SemanticsProperties.Heading, Unit)
+                .and(hasText("Scan complete")),
+        ).assertIsDisplayed()
+    }
+
+    @Test
+    fun searchablePdfProgressAndCancellationAreLiveAnnouncements() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = scanSummary(jpegPageCount = 1),
+                searchablePdfSaveState = SearchablePdfSaveState.Cancelled,
+            )
+        }
+
+        composeTestRule.onNode(
+            SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite)
+                .and(hasText("Searchable PDF save cancelled.")),
+        ).assertIsDisplayed()
+    }
+
+    @Test
+    fun scanResultActionsRemainReachableAtLargeFontOnNarrowWidth() {
+        composeTestRule.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = 2f)) {
+                Box(modifier = androidx.compose.ui.Modifier.size(width = 320.dp, height = 600.dp)) {
+                    PageHarborApp(scannerSpikeState = scanSummary(jpegPageCount = 1))
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Save PDF").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Save searchable PDF").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Discard").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun darkThemeCompositionKeepsScanActionsAvailable() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                darkTheme = true,
+                scannerSpikeState = scanSummary(jpegPageCount = 1),
+            )
+        }
+
+        composeTestRule.onNodeWithText("Save PDF").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Save searchable PDF").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Recognize Text").assertIsDisplayed()
     }
 
     private fun scanSummary(jpegPageCount: Int) = ScannerSpikeState.ResultSummary(

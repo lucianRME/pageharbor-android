@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.Alignment
@@ -90,13 +91,16 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Text(
+                        modifier = Modifier.semantics { heading() },
                         text = stringResource(R.string.app_name),
                         style = MaterialTheme.typography.headlineLarge,
                         color = MaterialTheme.colorScheme.onBackground,
                         textAlign = TextAlign.Center,
                     )
                     Text(
-                        modifier = Modifier.padding(top = 32.dp),
+                        modifier = Modifier
+                            .padding(top = 32.dp)
+                            .semantics { heading() },
                         text = stringResource(R.string.home_headline),
                         style = MaterialTheme.typography.headlineMedium,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -119,7 +123,9 @@ fun HomeScreen(
                     when (scannerSpikeState) {
                         ScannerSpikeState.Preparing -> {
                             Text(
-                                modifier = Modifier.padding(top = 16.dp),
+                                modifier = Modifier
+                                    .padding(top = 16.dp)
+                                    .semantics { liveRegion = LiveRegionMode.Polite },
                                 text = stringResource(R.string.home_scan_preparing),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onBackground,
@@ -453,10 +459,18 @@ private fun PrivacyInfoDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(text = stringResource(R.string.home_privacy_dialog_title))
+            Text(
+                modifier = Modifier.semantics { heading() },
+                text = stringResource(R.string.home_privacy_dialog_title),
+            )
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                modifier = Modifier
+                    .heightIn(max = 360.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 Text(text = stringResource(R.string.home_privacy_dialog_local_processing))
                 Text(text = stringResource(R.string.home_privacy_dialog_no_cloud))
                 Text(text = stringResource(R.string.home_privacy_dialog_user_choice))
@@ -483,10 +497,18 @@ private fun AboutDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(text = stringResource(R.string.about_title))
+            Text(
+                modifier = Modifier.semantics { heading() },
+                text = stringResource(R.string.about_title),
+            )
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(
+                modifier = Modifier
+                    .heightIn(max = 360.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
                 Text(text = stringResource(R.string.about_tagline))
                 Text(text = stringResource(R.string.about_version, versionName))
                 Text(text = stringResource(R.string.about_build_number, versionCode))

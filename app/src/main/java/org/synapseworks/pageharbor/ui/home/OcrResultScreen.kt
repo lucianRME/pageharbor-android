@@ -1,12 +1,15 @@
 package org.synapseworks.pageharbor.ui.home
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -18,8 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.synapseworks.pageharbor.R
 import org.synapseworks.pageharbor.ocr.OcrResult
@@ -54,7 +57,12 @@ fun OcrResultScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.ocr_result_heading)) },
+                title = {
+                    Text(
+                        modifier = Modifier.semantics { heading() },
+                        text = stringResource(R.string.ocr_result_heading),
+                    )
+                },
                 navigationIcon = {
                     TextButton(
                         modifier = Modifier.semantics {
@@ -70,7 +78,8 @@ fun OcrResultScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = 24.dp)
+                .verticalScroll(rememberScrollState()),
         ) {
             if (textFoundPageCount == 0) {
                 Text(
@@ -95,30 +104,65 @@ fun OcrResultScreen(
                         color = MaterialTheme.colorScheme.error,
                     )
                 }
-                SelectionContainer(modifier = Modifier.weight(1f)) {
+                OcrActions(
+                    copyPayload = copyPayload,
+                    onCopyText = onCopyText,
+                    onRecognizeAgain = onRecognizeAgain,
+                    onClearRecognizedText = onClearRecognizedText,
+                )
+                SelectionContainer {
                     Text(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(vertical = 16.dp)
-                            .verticalScroll(rememberScrollState()),
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
                         text = preview,
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 }
             }
-            androidx.compose.foundation.layout.Row {
-                if (copyPayload != null) {
-                    TextButton(
-                        modifier = Modifier.semantics {
-                            contentDescription = context.getString(R.string.ocr_copy_content_description)
-                        },
-                        onClick = { onCopyText(copyPayload) },
-                    ) { Text(stringResource(R.string.ocr_copy_action)) }
-                }
-                TextButton(onClick = onRecognizeAgain) { Text(stringResource(R.string.ocr_recognize_again_action)) }
-                TextButton(onClick = onClearRecognizedText) { Text(stringResource(R.string.ocr_clear_action)) }
+            if (textFoundPageCount == 0) {
+                OcrActions(
+                    copyPayload = null,
+                    onCopyText = onCopyText,
+                    onRecognizeAgain = onRecognizeAgain,
+                    onClearRecognizedText = onClearRecognizedText,
+                )
             }
+        }
+    }
+}
+
+@Composable
+private fun OcrActions(
+    copyPayload: String?,
+    onCopyText: (String) -> Unit,
+    onRecognizeAgain: () -> Unit,
+    onClearRecognizedText: () -> Unit,
+) {
+    androidx.compose.foundation.layout.Column(
+        modifier = Modifier.padding(top = 16.dp),
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+    ) {
+        if (copyPayload != null) {
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { onCopyText(copyPayload) },
+            ) {
+                Text(stringResource(R.string.ocr_copy_action))
+            }
+        }
+        OutlinedButton(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onRecognizeAgain,
+        ) {
+            Text(stringResource(R.string.ocr_recognize_again_action))
+        }
+        TextButton(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onClearRecognizedText,
+        ) {
+            Text(stringResource(R.string.ocr_clear_action))
         }
     }
 }

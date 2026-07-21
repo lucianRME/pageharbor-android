@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Began the `v0.6.0-dev` accessibility and UX maturity pass across Home, Scan Result, and OCR Result.
+- Added semantic headings, polite live announcements for Scan Result progress and feedback, responsive stacked OCR actions, and concise destructive-action copy.
+- Added focused Compose coverage for headings, live feedback, narrow-width 200% font-scale action reachability, and dark-theme action availability.
+
 ## [0.5.0-dev]
 
 ### Added

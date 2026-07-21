@@ -20,7 +20,7 @@
     <string name="home_scan_result_pdf_not_returned">PDF result: not returned</string>
     <string name="home_scan_result_pdf_pages">PDF pages: %1$d</string>
     <string name="home_scan_result_local_statement">Scanner result was received locally.</string>
-    <string name="home_clear_scan_result">Clear scan result</string>
+    <string name="home_clear_scan_result">Discard</string>
     <string name="ocr_recognize_action">Recognize Text</string>
     <string name="ocr_recognize_again_action">Recognize Again</string>
     <string name="ocr_view_action">View recognized text</string>
@@ -37,7 +37,7 @@
     <string name="ocr_preview_empty_page">No text recognized on this page.</string>
     <string name="ocr_no_text">No text was recognized in this scan.</string>
     <string name="ocr_partial_failure_warning">Some pages could not be read.</string>
-    <string name="ocr_clear_action">Clear recognized text</string>
+    <string name="ocr_clear_action">Clear</string>
     <string name="ocr_error_no_pages">No scanned pages are available for text recognition.</string>
     <string name="ocr_error_all_pages_failed">Text could not be recognized from this scan.</string>
     <string name="ocr_error_unexpected">Text recognition could not be completed.</string>
