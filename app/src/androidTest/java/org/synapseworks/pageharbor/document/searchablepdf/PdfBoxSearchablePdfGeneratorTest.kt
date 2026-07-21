@@ -153,6 +153,36 @@ class PdfBoxSearchablePdfGeneratorTest {
     }
 
     @Test
+    fun removesPartialOutputWhenALaterJpegCannotBeRead() = runBlocking {
+        val firstImage = jpegFixture(width = 240, height = 320, color = Color.LTGRAY)
+        val output = outputFile().apply { writeText("partial") }
+
+        val result = generator.generate(
+            SearchablePdfRequest(
+                pages = listOf(
+                    SearchablePdfPage(
+                        openJpegStream = { ByteArrayInputStream(firstImage) },
+                        ocrResult = pageResult(0, 240, 320, "First page"),
+                    ),
+                    SearchablePdfPage(
+                        openJpegStream = { ByteArrayInputStream(byteArrayOf(1, 2, 3)) },
+                        ocrResult = pageResult(1, 240, 320, "Later page"),
+                    ),
+                ),
+                outputFile = output,
+            ),
+        )
+
+        assertEquals(
+            SearchablePdfGenerationResult.Failure(
+                SearchablePdfGenerationError.PAGE_IMAGE_UNREADABLE,
+            ),
+            result,
+        )
+        assertFalse(output.exists())
+    }
+
+    @Test
     fun removesExistingTemporaryOutputForAnEmptyRequest() = runBlocking {
         val output = outputFile().apply { writeText("partial") }
 

@@ -7,11 +7,9 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
@@ -44,6 +42,7 @@ import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfExportErr
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfExportProgressListener
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfExportRequest
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfExportResult
+import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfOperationTracker
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfPreparedExport
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfSaveError
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfSaveState
@@ -52,6 +51,7 @@ import org.synapseworks.pageharbor.document.searchablepdf.searchablePdfSaveState
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
 import org.synapseworks.pageharbor.scanner.createScannerResultSummary
 import org.synapseworks.pageharbor.ui.PageHarborApp
+import org.synapseworks.pageharbor.ui.PageHarborScreen
 import org.synapseworks.pageharbor.ocr.MlKitOcrEngine
 import org.synapseworks.pageharbor.ocr.OcrEngine
 import org.synapseworks.pageharbor.ocr.OcrPage
@@ -62,16 +62,31 @@ import org.synapseworks.pageharbor.ocr.clearedOcrState
 import org.synapseworks.pageharbor.ocr.ocrStateAfterResult
 
 class MainActivity : ComponentActivity() {
-    private var scannerSpikeState: ScannerSpikeState by mutableStateOf(ScannerSpikeState.Idle)
-    private var pdfSaveState: PdfSaveState by mutableStateOf(PdfSaveState.Idle)
-    private var pdfShareState: PdfShareState by mutableStateOf(PdfShareState.Idle)
-    private var pageExportState: PageExportState by mutableStateOf(PageExportState.Idle)
-    private var ocrUiState: OcrUiState by mutableStateOf(OcrUiState.Idle)
-    private var searchablePdfSaveState: SearchablePdfSaveState by mutableStateOf(
-        SearchablePdfSaveState.Idle,
-    )
-    private var scannedPdfUri: Uri? = null
-    private var scannedPageUris: List<Uri> = emptyList()
+    private val session: PageHarborSessionViewModel by viewModels()
+    private var scannerSpikeState: ScannerSpikeState
+        get() = session.scannerState
+        set(value) { session.scannerState = value }
+    private var pdfSaveState: PdfSaveState
+        get() = session.pdfSaveState
+        set(value) { session.pdfSaveState = value }
+    private var pdfShareState: PdfShareState
+        get() = session.pdfShareState
+        set(value) { session.pdfShareState = value }
+    private var pageExportState: PageExportState
+        get() = session.pageExportState
+        set(value) { session.pageExportState = value }
+    private var ocrUiState: OcrUiState
+        get() = session.ocrUiState
+        set(value) { session.ocrUiState = value }
+    private var searchablePdfSaveState: SearchablePdfSaveState
+        get() = session.searchablePdfSaveState
+        set(value) { session.searchablePdfSaveState = value }
+    private var scannedPdfUri: Uri?
+        get() = session.scannedPdfUri
+        set(value) { session.scannedPdfUri = value }
+    private var scannedPageUris: List<Uri>
+        get() = session.scannedPageUris
+        set(value) { session.scannedPageUris = value }
     private val ocrEngine: OcrEngine = MlKitOcrEngine()
     private var ocrJob: Job? = null
     private val searchablePdfExportCoordinator by lazy {
@@ -79,17 +94,14 @@ class MainActivity : ComponentActivity() {
     }
     private var searchablePdfPreparedExport: SearchablePdfPreparedExport.Ready? = null
     private var searchablePdfExportJob: Job? = null
+    private val searchablePdfOperationTracker = SearchablePdfOperationTracker()
 
     private val scanLauncher = registerForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult(),
     ) { result ->
         clearRecognizedText()
-        scannedPdfUri = null
-        scannedPageUris = emptyList()
-        pdfSaveState = PdfSaveState.Idle
-        pdfShareState = PdfShareState.Idle
-        pageExportState = PageExportState.Idle
         clearSearchablePdfSave()
+        session.clearScan()
 
         if (result.resultCode == Activity.RESULT_CANCELED) {
             scannerSpikeState = ScannerSpikeState.Cancelled
@@ -101,21 +113,25 @@ class MainActivity : ComponentActivity() {
             return@registerForActivityResult
         }
 
-        scannerSpikeState = runCatching {
+        runCatching {
             val scannerResult = GmsDocumentScanningResult.fromActivityResultIntent(result.data)
             val jpegPageCount = scannerResult?.pages?.size ?: 0
             val pdfPageCount = scannerResult?.pdf?.pageCount
             if (scannerResult == null || (jpegPageCount == 0 && pdfPageCount == null)) {
-                ScannerSpikeState.Error
+                null
             } else {
-                scannedPdfUri = scannerResult.pdf?.uri
-                scannedPageUris = scannerResult.pages.orEmpty().map { page -> page.imageUri }
-                createScannerResultSummary(
-                    jpegPageCount = jpegPageCount,
-                    pdfPageCount = pdfPageCount,
+                session.replaceScan(
+                    scannerState = createScannerResultSummary(
+                        jpegPageCount = jpegPageCount,
+                        pdfPageCount = pdfPageCount,
+                    ),
+                    scannedPdfUri = scannerResult.pdf?.uri,
+                    scannedPageUris = scannerResult.pages.orEmpty().map { page -> page.imageUri },
                 )
             }
-        }.getOrDefault(ScannerSpikeState.Error)
+        }.getOrNull() ?: run {
+            scannerSpikeState = ScannerSpikeState.Error
+        }
     }
 
     private val createPdfDocumentLauncher = registerForActivityResult(
@@ -157,12 +173,8 @@ class MainActivity : ComponentActivity() {
             }
             return@registerForActivityResult
         }
-        if (preparedExport == null) {
-            searchablePdfSaveState = SearchablePdfSaveState.Error(
-                SearchablePdfSaveError.PREPARATION_FAILED,
-            )
-            return@registerForActivityResult
-        }
+        // A result delivered after discard, scan replacement, or recreation owns no export.
+        if (preparedExport == null) return@registerForActivityResult
 
         searchablePdfSaveState = SearchablePdfSaveState.Saving
         searchablePdfExportJob = lifecycleScope.launch {
@@ -192,6 +204,9 @@ class MainActivity : ComponentActivity() {
         }
         setContent {
             PageHarborApp(
+                screen = session.screen,
+                onScreenChange = { session.screen = it },
+                autoNavigateToScanResult = false,
                 scannerSpikeState = scannerSpikeState,
                 pdfSaveState = pdfSaveState,
                 pdfShareState = pdfShareState,
@@ -208,13 +223,8 @@ class MainActivity : ComponentActivity() {
                 onViewSourceCode = ::openSourceCode,
                 onClearScanResult = {
                     clearRecognizedText()
-                    scannedPdfUri = null
-                    scannedPageUris = emptyList()
-                    pdfSaveState = PdfSaveState.Idle
-                    pdfShareState = PdfShareState.Idle
-                    pageExportState = PageExportState.Idle
                     clearSearchablePdfSave()
-                    scannerSpikeState = ScannerSpikeState.Idle
+                    session.clearScan()
                 },
             )
         }
@@ -305,8 +315,8 @@ class MainActivity : ComponentActivity() {
             return
         }
 
-        searchablePdfPreparedExport?.let(searchablePdfExportCoordinator::discardPreparedExport)
-        searchablePdfPreparedExport = null
+        clearSearchablePdfSave()
+        val operationId = searchablePdfOperationTracker.begin()
         searchablePdfSaveState = SearchablePdfSaveState.Preparing
         val existingOcrResult = (ocrUiState as? OcrUiState.Success)?.result
         searchablePdfExportJob = lifecycleScope.launch {
@@ -316,11 +326,24 @@ class MainActivity : ComponentActivity() {
                     ocrResult = existingOcrResult,
                     progressListener = SearchablePdfExportProgressListener { progress ->
                         runOnUiThread {
-                            searchablePdfSaveState = searchablePdfSaveStateForProgress(progress)
+                            if (searchablePdfOperationTracker.acceptsProgress(operationId)) {
+                                searchablePdfSaveState = searchablePdfSaveStateForProgress(progress)
+                            }
                         }
                     },
                 ),
             )
+            when (searchablePdfOperationTracker.claimCompletion(operationId)) {
+                SearchablePdfOperationTracker.CompletionClaim.SUPERSEDED -> {
+                    if (preparedExport is SearchablePdfPreparedExport.Ready) {
+                        searchablePdfExportCoordinator.discardPreparedExport(preparedExport)
+                    }
+                    return@launch
+                }
+
+                SearchablePdfOperationTracker.CompletionClaim.DUPLICATE -> return@launch
+                SearchablePdfOperationTracker.CompletionClaim.CLAIMED -> Unit
+            }
             when (preparedExport) {
                 is SearchablePdfPreparedExport.Ready -> {
                     searchablePdfPreparedExport = preparedExport
@@ -363,6 +386,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun clearSearchablePdfSave() {
+        searchablePdfOperationTracker.invalidate()
         searchablePdfExportJob?.cancel()
         searchablePdfExportJob = null
         searchablePdfPreparedExport?.let(searchablePdfExportCoordinator::discardPreparedExport)
@@ -564,8 +588,35 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        ocrJob?.cancel()
+        ocrJob = null
         clearSearchablePdfSave()
+        session.resetTransientStateForRecreation()
         super.onDestroy()
+    }
+
+    internal fun restoreCompletedSessionForTest(
+        summary: ScannerSpikeState.ResultSummary,
+        ocrResult: org.synapseworks.pageharbor.ocr.OcrResult? = null,
+        screen: PageHarborScreen = PageHarborScreen.ScanResult,
+        searchablePdfSaveState: SearchablePdfSaveState = SearchablePdfSaveState.Idle,
+    ) {
+        session.replaceScan(summary, scannedPdfUri = null, scannedPageUris = emptyList())
+        session.ocrUiState = ocrResult?.let(OcrUiState::Success) ?: OcrUiState.Idle
+        session.screen = screen
+        session.searchablePdfSaveState = searchablePdfSaveState
+    }
+
+    internal fun sessionScreenForTest(): PageHarborScreen = session.screen
+
+    internal fun sessionSummaryForTest(): ScannerSpikeState = session.scannerState
+
+    internal fun searchablePdfStateForTest(): SearchablePdfSaveState = session.searchablePdfSaveState
+
+    internal fun discardForTest() {
+        clearRecognizedText()
+        clearSearchablePdfSave()
+        session.clearScan()
     }
 
     private fun openSourceCode() {

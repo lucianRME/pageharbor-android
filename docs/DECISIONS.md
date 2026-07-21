@@ -130,3 +130,14 @@ The rule engine must operate only for the active user-initiated export and disca
 
 Implementation status:
 The local classifier, category-only filename suggester, and searchable-PDF SAF initial-title integration are complete without UI changes. Classification requires two distinct signals and otherwise falls back conservatively to `document.pdf`. Metadata remains intentionally unimplemented. Future metadata, categories, models, or other smart-output expansion requires a separate decision.
+
+## ADR-011: Retain Only Stable Active-Session State Across Configuration Changes
+
+Decision:
+Use one Activity-scoped `ViewModel` to retain the current in-memory scan session across `MainActivity` configuration changes. Retain only the current product screen, scan summary, scanner-returned JPEG/PDF URIs, and completed OCR result.
+
+Rationale:
+The prior Activity-local and Compose-local state returned a user with a completed scan to Home after rotation. A standard retained ViewModel fixes that lifecycle boundary without adding persistent storage, Navigation Compose, or a document library. The retained data is the minimum needed to keep Scan Result and completed OCR Result usable after an Activity recreation.
+
+Consequences:
+No `SavedStateHandle`, database, file persistence, background job, or process-death recovery is introduced. Active OCR, PDF generation, SAF write/picker ownership, transient feedback, coroutine jobs, streams, PdfBox objects, and prepared private exports remain Activity-owned. Recreation cancels or resets that transient work, cleans prepared private output, returns to a stable Scan Result when a completed scan exists, and permits retry. The ViewModel must never retain an Activity, Context, document copies, or logging/analytics data. Final Activity/task destruction ends the in-memory session.

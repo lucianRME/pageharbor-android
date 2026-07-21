@@ -5,6 +5,7 @@ import android.net.Uri
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
+import java.io.OutputStream
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.Dispatchers
@@ -89,6 +90,12 @@ class LocalSearchablePdfExportCoordinator(
     private val generator: SearchablePdfGenerator = PdfBoxSearchablePdfGenerator(context),
     private val documentClassifier: DocumentClassifier = DocumentClassifier(),
     private val filenameSuggestionEngine: FilenameSuggestionEngine = FilenameSuggestionEngine(),
+    /** Kept injectable only for deterministic provider-boundary tests; production uses SAF. */
+    private val openDestinationOutputStream: (Uri) -> OutputStream? = { uri ->
+        context.contentResolver.openOutputStream(uri)
+    },
+    /** Kept injectable only for deterministic private-cache cleanup tests. */
+    private val deleteTemporaryFile: (File) -> Boolean = File::delete,
 ) : SearchablePdfExportCoordinator {
     private val applicationContext: Context = context.applicationContext ?: context
 
@@ -178,7 +185,7 @@ class LocalSearchablePdfExportCoordinator(
             coroutineContext.ensureActive()
             reportProgress(ready.progressListener, SearchablePdfExportProgress.Writing)
             val destination = try {
-                applicationContext.contentResolver.openOutputStream(destinationUri)
+                openDestinationOutputStream(destinationUri)
             } catch (_: FileNotFoundException) {
                 null
             } catch (_: IllegalArgumentException) {
@@ -186,6 +193,8 @@ class LocalSearchablePdfExportCoordinator(
             } catch (_: SecurityException) {
                 null
             } catch (_: IOException) {
+                null
+            } catch (_: RuntimeException) {
                 null
             }
             if (destination == null) {
@@ -212,6 +221,8 @@ class LocalSearchablePdfExportCoordinator(
         } catch (_: IOException) {
             SearchablePdfExportResult.Failure(SearchablePdfExportError.WRITE_FAILED)
         } catch (_: SecurityException) {
+            SearchablePdfExportResult.Failure(SearchablePdfExportError.WRITE_FAILED)
+        } catch (_: RuntimeException) {
             SearchablePdfExportResult.Failure(SearchablePdfExportError.WRITE_FAILED)
         } finally {
             deleteTemporaryPdf(ready.temporaryFile)
@@ -277,7 +288,7 @@ class LocalSearchablePdfExportCoordinator(
     private fun deleteTemporaryPdf(file: File) {
         if (file.isFile) {
             try {
-                file.delete()
+                deleteTemporaryFile(file)
             } catch (_: SecurityException) {
                 // Private-cache cleanup is best-effort and must not expose document details.
             }

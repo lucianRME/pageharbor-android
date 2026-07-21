@@ -13,6 +13,8 @@ import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.text.PDFTextStripper
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
+import java.io.OutputStream
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertArrayEquals
@@ -213,6 +215,208 @@ class LocalSearchablePdfExportCoordinatorTest {
         }
     }
 
+    @Test
+    fun providerOpenFailuresAreSafeAndDeletePreparedOutput() = runBlocking {
+        val source = sharedFile("provider-open-source.jpg").apply { writeText("jpeg") }
+        val coordinator = LocalSearchablePdfExportCoordinator(
+            context = context,
+            ocrEngine = FailingOcrEngine,
+            generator = RecordingGenerator(),
+            openDestinationOutputStream = { throw IllegalStateException("provider unavailable") },
+        )
+
+        try {
+            val prepared = prepare(coordinator, source)
+
+            assertEquals(
+                SearchablePdfExportResult.Failure(
+                    SearchablePdfExportError.DESTINATION_UNAVAILABLE,
+                ),
+                coordinator.writePreparedExport(prepared, Uri.parse("content://test.provider/document.pdf")),
+            )
+            assertFalse(prepared.temporaryFile.exists())
+            assertTrue(source.exists())
+        } finally {
+            source.delete()
+        }
+    }
+
+    @Test
+    fun nullProviderOutputStreamIsSafeAndDeletesPreparedOutput() = runBlocking {
+        val source = sharedFile("null-provider-source.jpg").apply { writeText("jpeg") }
+        val coordinator = LocalSearchablePdfExportCoordinator(
+            context = context,
+            ocrEngine = FailingOcrEngine,
+            generator = RecordingGenerator(),
+            openDestinationOutputStream = { null },
+        )
+
+        try {
+            val prepared = prepare(coordinator, source)
+
+            assertEquals(
+                SearchablePdfExportResult.Failure(
+                    SearchablePdfExportError.DESTINATION_UNAVAILABLE,
+                ),
+                coordinator.writePreparedExport(prepared, Uri.parse("content://test.provider/null.pdf")),
+            )
+            assertFalse(prepared.temporaryFile.exists())
+            assertTrue(source.exists())
+        } finally {
+            source.delete()
+        }
+    }
+
+    @Test
+    fun providerWriteFlushAndCloseFailuresAreSafeAndDeletePreparedOutput() = runBlocking {
+        val source = sharedFile("provider-write-source.jpg").apply { writeText("jpeg") }
+        val failureModes = listOf(
+            FailingOutputStream.Mode.IMMEDIATE_WRITE,
+            FailingOutputStream.Mode.MID_COPY,
+            FailingOutputStream.Mode.FLUSH,
+            FailingOutputStream.Mode.CLOSE,
+        )
+
+        try {
+            failureModes.forEach { mode ->
+                val coordinator = LocalSearchablePdfExportCoordinator(
+                    context = context,
+                    ocrEngine = FailingOcrEngine,
+                    generator = LargeRecordingGenerator(),
+                    openDestinationOutputStream = { FailingOutputStream(mode) },
+                )
+                val prepared = prepare(coordinator, source)
+
+                assertEquals(
+                    SearchablePdfExportResult.Failure(SearchablePdfExportError.WRITE_FAILED),
+                    coordinator.writePreparedExport(
+                        prepared,
+                        Uri.parse("content://test.provider/$mode.pdf"),
+                    ),
+                )
+                assertFalse(prepared.temporaryFile.exists())
+                assertTrue(source.exists())
+            }
+        } finally {
+            source.delete()
+        }
+    }
+
+    @Test
+    fun cancellationDuringCopyDeletesPreparedOutputAndRemainsDistinctFromFailure() = runBlocking {
+        val source = sharedFile("copy-cancellation-source.jpg").apply { writeText("jpeg") }
+        val coordinator = LocalSearchablePdfExportCoordinator(
+            context = context,
+            ocrEngine = FailingOcrEngine,
+            generator = LargeRecordingGenerator(),
+            openDestinationOutputStream = { FailingOutputStream(FailingOutputStream.Mode.CANCELLATION) },
+        )
+
+        try {
+            val prepared = prepare(coordinator, source)
+            val cancellation = runCatching {
+                coordinator.writePreparedExport(
+                    prepared,
+                    Uri.parse("content://test.provider/cancelled.pdf"),
+                )
+            }.exceptionOrNull()
+
+            assertTrue(cancellation is CancellationException)
+            assertFalse(prepared.temporaryFile.exists())
+            assertTrue(source.exists())
+        } finally {
+            source.delete()
+        }
+    }
+
+    @Test
+    fun missingPreparedOutputAndRepeatedDiscardAreHarmless() = runBlocking {
+        val source = sharedFile("missing-prepared-source.jpg").apply { writeText("jpeg") }
+        val coordinator = LocalSearchablePdfExportCoordinator(
+            context = context,
+            ocrEngine = FailingOcrEngine,
+            generator = RecordingGenerator(),
+        )
+
+        try {
+            val prepared = prepare(coordinator, source)
+            assertTrue(prepared.temporaryFile.delete())
+
+            assertEquals(
+                SearchablePdfExportResult.Failure(
+                    SearchablePdfExportError.PREPARED_EXPORT_UNAVAILABLE,
+                ),
+                coordinator.writePreparedExport(
+                    prepared,
+                    Uri.parse("content://test.provider/missing.pdf"),
+                ),
+            )
+            coordinator.discardPreparedExport(prepared)
+            coordinator.discardPreparedExport(prepared)
+            assertTrue(source.exists())
+        } finally {
+            source.delete()
+        }
+    }
+
+    @Test
+    fun deletionFailureDoesNotCrashOrExposeSuccess() = runBlocking {
+        val source = sharedFile("deletion-failure-source.jpg").apply { writeText("jpeg") }
+        val coordinator = LocalSearchablePdfExportCoordinator(
+            context = context,
+            ocrEngine = FailingOcrEngine,
+            generator = RecordingGenerator(),
+            openDestinationOutputStream = { null },
+            deleteTemporaryFile = { false },
+        )
+
+        try {
+            val prepared = prepare(coordinator, source)
+
+            assertEquals(
+                SearchablePdfExportResult.Failure(
+                    SearchablePdfExportError.DESTINATION_UNAVAILABLE,
+                ),
+                coordinator.writePreparedExport(prepared, Uri.parse("content://test.provider/delete.pdf")),
+            )
+            assertTrue(prepared.temporaryFile.exists())
+            assertTrue(source.exists())
+            assertTrue(prepared.temporaryFile.delete())
+        } finally {
+            source.delete()
+        }
+    }
+
+    @Test
+    fun generatorFailureAfterTemporaryOutputCreationDeletesPartialOutput() = runBlocking {
+        val source = sharedFile("partial-generation-source.jpg").apply { writeText("jpeg") }
+        val generator = PartialFailingGenerator()
+        val coordinator = LocalSearchablePdfExportCoordinator(
+            context = context,
+            ocrEngine = FailingOcrEngine,
+            generator = generator,
+        )
+
+        try {
+            assertEquals(
+                SearchablePdfPreparedExport.Failure(
+                    SearchablePdfPreparationError.GENERATION_FAILED,
+                ),
+                coordinator.prepare(
+                    SearchablePdfExportRequest(
+                        pageUris = listOf(fileUri(source)),
+                        ocrResult = OcrResult(listOf(pageResult())),
+                    ),
+                ),
+            )
+            assertTrue(generator.outputFile != null)
+            assertFalse(generator.outputFile!!.exists())
+            assertTrue(source.exists())
+        } finally {
+            source.delete()
+        }
+    }
+
     private suspend fun assertPreparedFilename(source: File, text: String, expectedFilename: String) {
         val coordinator = LocalSearchablePdfExportCoordinator(
             context = context,
@@ -232,6 +436,16 @@ class LocalSearchablePdfExportCoordinatorTest {
             coordinator.discardPreparedExport(prepared)
         }
     }
+
+    private suspend fun prepare(
+        coordinator: LocalSearchablePdfExportCoordinator,
+        source: File,
+    ): SearchablePdfPreparedExport.Ready = coordinator.prepare(
+        SearchablePdfExportRequest(
+            pageUris = listOf(fileUri(source)),
+            ocrResult = OcrResult(listOf(pageResult())),
+        ),
+    ) as SearchablePdfPreparedExport.Ready
 
     private fun pageResult(text: String = "English: searchable text"): OcrPageResult = OcrPageResult(
         pageIndex = 0,
@@ -287,6 +501,61 @@ class LocalSearchablePdfExportCoordinatorTest {
             requestCount++
             request.outputFile.writeText("prepared searchable pdf")
             return SearchablePdfGenerationResult.Success(pageCount = 1, textLayerPageCount = 1)
+        }
+    }
+
+    private class LargeRecordingGenerator : SearchablePdfGenerator {
+        override suspend fun generate(request: SearchablePdfRequest): SearchablePdfGenerationResult {
+            request.outputFile.outputStream().use { output ->
+                output.write(ByteArray(16 * 1024) { 1 })
+            }
+            return SearchablePdfGenerationResult.Success(pageCount = 1, textLayerPageCount = 1)
+        }
+    }
+
+    private class PartialFailingGenerator : SearchablePdfGenerator {
+        var outputFile: File? = null
+
+        override suspend fun generate(request: SearchablePdfRequest): SearchablePdfGenerationResult {
+            outputFile = request.outputFile
+            request.outputFile.writeText("partial")
+            return SearchablePdfGenerationResult.Failure(
+                SearchablePdfGenerationError.GENERATION_FAILED,
+            )
+        }
+    }
+
+    private class FailingOutputStream(private val mode: Mode) : OutputStream() {
+        enum class Mode {
+            IMMEDIATE_WRITE,
+            MID_COPY,
+            FLUSH,
+            CLOSE,
+            CANCELLATION,
+        }
+
+        private var writeCalls = 0
+
+        override fun write(b: Int) = write(byteArrayOf(b.toByte()))
+
+        override fun write(buffer: ByteArray, offset: Int, length: Int) {
+            writeCalls++
+            when (mode) {
+                Mode.IMMEDIATE_WRITE -> throw IOException("write failed")
+                Mode.MID_COPY -> if (writeCalls > 1) throw IOException("copy failed")
+                Mode.CANCELLATION -> throw CancellationException()
+                Mode.FLUSH,
+                Mode.CLOSE,
+                -> Unit
+            }
+        }
+
+        override fun flush() {
+            if (mode == Mode.FLUSH) throw IOException("flush failed")
+        }
+
+        override fun close() {
+            if (mode == Mode.CLOSE) throw IOException("close failed")
         }
     }
 

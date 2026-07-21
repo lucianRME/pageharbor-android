@@ -19,22 +19,24 @@ Possible screens:
 - Scan result review.
 - Export result or completion state.
 
-Current UI uses local screen-state navigation for three simple surfaces: Home, Scan Result, and OCR Result. Scan Result owns save/share/export/OCR feedback, including the user-initiated searchable-PDF save flow; OCR Result owns text viewing and copy actions. This deliberately avoids Navigation Compose, bottom navigation, drawers, and tabs.
+Current UI uses local screen-state navigation for three simple surfaces: Home, Scan Result, and OCR Result. Scan Result owns save/share/export/OCR feedback, including the user-initiated searchable-PDF save flow; OCR Result owns text viewing and copy actions. This deliberately avoids Navigation Compose, bottom navigation, drawers, and tabs. `MainActivity` uses one Activity-scoped `PageHarborSessionViewModel` only for the active in-memory scan session: the current screen, scan summary, scanner-returned page/PDF URIs, and completed OCR result. That ViewModel survives configuration changes but has no `SavedStateHandle`, database, file persistence, or process-death recovery.
 
 Static screens should not receive ViewModels by default. A coordinator or ViewModel should be introduced only when a screen has meaningful state, asynchronous work, or platform result handling that would otherwise make the composable difficult to test or maintain.
 
 ## Application Coordination
 
-The scan flow may eventually need one small coordinator or ViewModel responsible for:
+The scan flow uses one small Activity-scoped ViewModel responsible for retaining stable active-session state across configuration changes. `MainActivity` continues to own Activity-bound work and platform callbacks:
 
 - Launching the scanner.
 - Interpreting scanner results.
-- Holding temporary scan-session state.
+- Holding stable in-memory scan-session state across Activity recreation.
 - Starting PDF preparation.
 - Coordinating save and share actions.
 - Surfacing errors to the UI.
 
 Keep this coordination local to the scan flow. Avoid global mutable state, service locators, and broad application-level managers unless a concrete need appears.
+
+Active OCR, PDF generation, SAF writes, picker ownership, progress, success/error feedback, coroutine jobs, streams, and prepared private searchable-PDF output are Activity-owned. They are cancelled or reset when an Activity is recreated and are never resumed automatically. The retained ViewModel does not hold an `Activity`, `Context`, streams, bitmaps, PdfBox objects, prepared outputs, or active jobs. A final Activity/task destruction also clears Activity-owned temporary output; process death starts a fresh Home state.
 
 ## Platform Integrations
 

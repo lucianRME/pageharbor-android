@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Retained stable active Scan Result and completed OCR state across `MainActivity` configuration changes, while cancelling/resetting active work, picker ownership, progress, and transient feedback without automatic restart.
+- Hardened Activity-owned searchable-PDF operations against stale progress and duplicate or superseded preparation completion, and ensured prepared private output is discarded when Activity ownership ends.
+- Hardened searchable-PDF SAF destination failures with safe result categories and private-output cleanup for unavailable, failing, or cancelled streams.
 - Added deterministic 20-page searchable-PDF processing regression coverage using reusable in-memory fixtures; this does not change the 10-page scanner acquisition limit.
 - Began the `v0.6.0-dev` accessibility and UX maturity pass across Home, Scan Result, and OCR Result.
 - Added semantic headings, polite live announcements for Scan Result progress and feedback, responsive stacked OCR actions, and concise destructive-action copy.
