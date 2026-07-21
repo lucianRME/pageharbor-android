@@ -95,6 +95,40 @@ class PdfBoxSearchablePdfGeneratorTest {
     }
 
     @Test
+    fun generatesTwentyOrderedPagesFromReusableFixtureStreams() = runBlocking {
+        val fixture = jpegFixture(width = 240, height = 320, color = Color.LTGRAY)
+        val output = outputFile()
+
+        try {
+            val result = generator.generate(
+                SearchablePdfRequest(
+                    pages = (0 until 20).map { index ->
+                        SearchablePdfPage(
+                            openJpegStream = { ByteArrayInputStream(fixture) },
+                            ocrResult = pageResult(
+                                pageIndex = index,
+                                width = 240,
+                                height = 320,
+                                text = "Page ${index + 1}",
+                            ),
+                        )
+                    },
+                    outputFile = output,
+                ),
+            )
+
+            assertEquals(SearchablePdfGenerationResult.Success(20, 20), result)
+            PDDocument.load(output).use { document ->
+                assertEquals(20, document.numberOfPages)
+                val extracted = PDFTextStripper().getText(document)
+                assertTrue(extracted.indexOf("Page 1") < extracted.indexOf("Page 20"))
+            }
+        } finally {
+            output.delete()
+        }
+    }
+
+    @Test
     fun removesPartialOutputWhenJpegCannotBeRead() = runBlocking {
         val output = outputFile().apply { writeText("partial") }
 

@@ -70,6 +70,7 @@ Current scope is limited to product maturity across the existing Home, Scan Resu
 - Responsive small-screen, landscape, and large-font action reachability.
 - Dark-theme readability and existing Material action hierarchy.
 - Consistent product-facing copy and cancellation/error feedback.
+- Large-document reliability validation, including 20-page post-scan processing regression coverage.
 
 This milestone does not add product features, navigation, storage, permissions, metadata, document categories, cloud services, or analytics. Manual Samsung accessibility and layout validation remains in progress; this milestone is not complete.
 

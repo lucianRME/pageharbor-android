@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Added deterministic 20-page searchable-PDF processing regression coverage using reusable in-memory fixtures; this does not change the 10-page scanner acquisition limit.
 - Began the `v0.6.0-dev` accessibility and UX maturity pass across Home, Scan Result, and OCR Result.
 - Added semantic headings, polite live announcements for Scan Result progress and feedback, responsive stacked OCR actions, and concise destructive-action copy.
 - Added focused Compose coverage for headings, live feedback, narrow-width 200% font-scale action reachability, and dark-theme action availability.
