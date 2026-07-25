@@ -62,18 +62,25 @@ Completed:
 
 PDF metadata was intentionally excluded from `v0.5.0-dev`. Alternate SAF-provider behavior, duplicate-name provider behavior, spoken TalkBack verification, 200% font verification, and external Adobe/Google Drive viewer checks remain documented validation gaps, not known product defects.
 
-### `v0.6.0-dev` — In progress
+### `v0.6.0-dev` — Complete
 
-Current scope is limited to product maturity across the existing Home, Scan Result, and OCR Result surfaces:
+- Accessibility semantics and responsive-layout improvements, including headings, polite live feedback, and 200% font automated reachability coverage.
+- Dark-theme coverage and visual hierarchy polish across Home, Scan Result, and OCR Result.
+- OCR Result local document preview, page-specific selectable text, and multipage Previous/Next navigation.
+- Lifecycle, cancellation, stale-result, picker-result, and provider-failure cleanup hardening.
+- Rotation-safe completed Scan Result and OCR Result, including selected OCR-page retention.
+- Deterministic 20-page post-scan searchable-PDF regression coverage.
+- Samsung SM-S938B and API 36 emulator validation.
 
-- Accessibility semantics, including headings and accessible status feedback.
-- Responsive small-screen, landscape, and large-font action reachability.
-- Dark-theme readability and existing Material action hierarchy.
-- Consistent product-facing copy and cancellation/error feedback.
-- Large-document reliability validation, including 20-page post-scan processing regression coverage.
-- OCR Result product polish: bounded local preview of the selected scan page, page-specific readable/selectable text, and in-memory multipage navigation; Samsung validation passed for multipage navigation, rotation, dark mode, large text, and TalkBack.
+This milestone does not add document storage, app-level navigation, permissions, metadata, document categories, cloud services, analytics, or process-death recovery.
 
-This milestone does not add document storage, app-level navigation, permissions, metadata, document categories, cloud services, or analytics. Further v0.6 maturity work remains; this milestone is not complete.
+### `v0.7.0-dev` — Planned only
+
+- Reassess remaining environment-dependent validation: spoken TalkBack, third-party SAF providers, and external PDF viewers.
+- Perform low-end-device validation before considering performance or capacity changes.
+- Consider future privacy-preserving improvements only through separately scoped proposals.
+
+Limits carried forward: scanner acquisition remains capped at 10 pages; the 20-page regression covers post-scan searchable-PDF processing only. Process-death recovery is unsupported. No `v0.7.0-dev` work is complete.
 
 ## Planned MVP
 

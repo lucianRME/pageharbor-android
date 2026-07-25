@@ -1,6 +1,6 @@
 # Lifecycle and Failure Validation
 
-Status: `v0.6.0-dev` in progress.
+Status: completed for `v0.6.0-dev`.
 
 ## Ownership model
 

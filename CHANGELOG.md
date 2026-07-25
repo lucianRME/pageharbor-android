@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.6.0-dev]
+
 ### Changed
 
 - Improved OCR Result with a bounded local preview for the selected scanned page, page-specific readable/selectable text, and retained multipage Previous/Next navigation.
@@ -15,9 +17,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Hardened Activity-owned searchable-PDF operations against stale progress and duplicate or superseded preparation completion, and ensured prepared private output is discarded when Activity ownership ends.
 - Hardened searchable-PDF SAF destination failures with safe result categories and private-output cleanup for unavailable, failing, or cancelled streams.
 - Added deterministic 20-page searchable-PDF processing regression coverage using reusable in-memory fixtures; this does not change the 10-page scanner acquisition limit.
-- Began the `v0.6.0-dev` accessibility and UX maturity pass across Home, Scan Result, and OCR Result.
-- Added semantic headings, polite live announcements for Scan Result progress and feedback, responsive stacked OCR actions, and concise destructive-action copy.
-- Added focused Compose coverage for headings, live feedback, narrow-width 200% font-scale action reachability, and dark-theme action availability.
+- Added semantic headings, polite live announcements for Scan Result progress and feedback, responsive stacked OCR actions, concise destructive-action copy, and 200% font-scale reachability coverage.
+- Synchronized the package version to `0.6.0-dev` (version code 6).
+- Removed transitive CCT transport discovery and scheduling manifest components; PageHarbor does not use telemetry transport.
 
 ## [0.5.0-dev]
 
