@@ -8,6 +8,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -20,6 +21,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.unit.dp
+import android.net.Uri
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -736,7 +738,7 @@ class HomeScreenTest {
     }
 
     @Test
-    fun ocrSuccessShowsViewActionAndDedicatedOrderedPreview() {
+    fun ocrSuccessShowsPageSpecificTextAndReturnsToScanResult() {
         composeTestRule.setContent {
             PageHarborApp(
                 scannerSpikeState = scanSummary(jpegPageCount = 2),
@@ -754,9 +756,44 @@ class HomeScreenTest {
         composeTestRule.onNodeWithText("View recognized text").performScrollTo().performClick()
         composeTestRule.onNodeWithText("Recognized text").assertIsDisplayed()
         composeTestRule.onNodeWithText("Text found on 2 of 2 pages").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Page 1\nFirst page text\n\nPage 2\nSecond page text").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Page 1 of 2").assertIsDisplayed()
+        composeTestRule.onNodeWithText("First page text").assertIsDisplayed()
         composeTestRule.onNodeWithText("Back").performClick()
         composeTestRule.onNodeWithText("View recognized text").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun multipageOcrNavigationChangesTheSelectedPageTextAndPreviewSemantics() {
+        val selectedPage = mutableStateOf(0)
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = scanSummary(jpegPageCount = 2),
+                ocrUiState = OcrUiState.Success(
+                    OcrResult(
+                        listOf(
+                            OcrPageResult(pageIndex = 0, text = "First page text"),
+                            OcrPageResult(pageIndex = 1, text = "Second page text"),
+                        ),
+                    ),
+                ),
+                ocrSelectedPageIndex = selectedPage.value,
+                scannedPageUris = listOf(
+                    Uri.parse("content://test/page-one"),
+                    Uri.parse("content://test/page-two"),
+                ),
+                onOcrSelectedPageChange = { selectedPage.value = it },
+            )
+        }
+
+        composeTestRule.onNodeWithText("View recognized text").performScrollTo().performClick()
+        composeTestRule.onNodeWithContentDescription("Scanned document preview, page 1 of 2")
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("Previous page").assertIsNotEnabled()
+        composeTestRule.onNodeWithText("Next page").performClick()
+
+        composeTestRule.onNodeWithText("Page 2 of 2").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Second page text").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Next page").assertIsNotEnabled()
     }
 
     @Test
@@ -890,6 +927,35 @@ class HomeScreenTest {
         composeTestRule.onNodeWithText("Save PDF").assertIsDisplayed()
         composeTestRule.onNodeWithText("Save searchable PDF").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("Discard").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun ocrResultNavigationControlsRemainReachableAtTwoHundredPercentFont() {
+        val selectedPage = mutableStateOf(0)
+        composeTestRule.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = 2f)) {
+                Box(modifier = androidx.compose.ui.Modifier.size(width = 320.dp, height = 600.dp)) {
+                    PageHarborApp(
+                        scannerSpikeState = scanSummary(jpegPageCount = 2),
+                        ocrUiState = OcrUiState.Success(
+                            OcrResult(
+                                listOf(
+                                    OcrPageResult(pageIndex = 0, text = "First page"),
+                                    OcrPageResult(pageIndex = 1, text = "Second page"),
+                                ),
+                            ),
+                        ),
+                        ocrSelectedPageIndex = selectedPage.value,
+                        onOcrSelectedPageChange = { selectedPage.value = it },
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("View recognized text").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("Page 1 of 2").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Next page").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("Page 2 of 2").assertIsDisplayed()
     }
 
     @Test

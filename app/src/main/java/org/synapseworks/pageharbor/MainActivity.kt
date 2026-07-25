@@ -78,6 +78,9 @@ class MainActivity : ComponentActivity() {
     private var ocrUiState: OcrUiState
         get() = session.ocrUiState
         set(value) { session.ocrUiState = value }
+    private var ocrSelectedPageIndex: Int
+        get() = session.ocrSelectedPageIndex
+        set(value) { session.ocrSelectedPageIndex = value }
     private var searchablePdfSaveState: SearchablePdfSaveState
         get() = session.searchablePdfSaveState
         set(value) { session.searchablePdfSaveState = value }
@@ -212,6 +215,9 @@ class MainActivity : ComponentActivity() {
                 pdfShareState = pdfShareState,
                 pageExportState = pageExportState,
                 ocrUiState = ocrUiState,
+                ocrSelectedPageIndex = ocrSelectedPageIndex,
+                scannedPageUris = scannedPageUris,
+                onOcrSelectedPageChange = { ocrSelectedPageIndex = it },
                 searchablePdfSaveState = searchablePdfSaveState,
                 onScanDocument = ::launchDocumentScanner,
                 onSavePdf = ::choosePdfDestination,
@@ -285,6 +291,7 @@ class MainActivity : ComponentActivity() {
                 return@launch
             }
             ocrUiState = ocrStateAfterResult(result)
+            ocrSelectedPageIndex = 0
         }
     }
 
@@ -292,6 +299,7 @@ class MainActivity : ComponentActivity() {
         ocrJob?.cancel()
         ocrJob = null
         ocrUiState = clearedOcrState()
+        ocrSelectedPageIndex = 0
     }
 
     private fun choosePdfDestination() {
@@ -599,17 +607,21 @@ class MainActivity : ComponentActivity() {
         summary: ScannerSpikeState.ResultSummary,
         ocrResult: org.synapseworks.pageharbor.ocr.OcrResult? = null,
         screen: PageHarborScreen = PageHarborScreen.ScanResult,
+        selectedOcrPageIndex: Int = 0,
         searchablePdfSaveState: SearchablePdfSaveState = SearchablePdfSaveState.Idle,
     ) {
         session.replaceScan(summary, scannedPdfUri = null, scannedPageUris = emptyList())
         session.ocrUiState = ocrResult?.let(OcrUiState::Success) ?: OcrUiState.Idle
         session.screen = screen
+        session.ocrSelectedPageIndex = selectedOcrPageIndex
         session.searchablePdfSaveState = searchablePdfSaveState
     }
 
     internal fun sessionScreenForTest(): PageHarborScreen = session.screen
 
     internal fun sessionSummaryForTest(): ScannerSpikeState = session.scannerState
+
+    internal fun selectedOcrPageForTest(): Int = session.ocrSelectedPageIndex
 
     internal fun searchablePdfStateForTest(): SearchablePdfSaveState = session.searchablePdfSaveState
 

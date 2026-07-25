@@ -12,6 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
+import android.net.Uri
 import org.synapseworks.pageharbor.BuildConfig
 import org.synapseworks.pageharbor.R
 import org.synapseworks.pageharbor.document.PageExportResult
@@ -39,6 +40,9 @@ fun PageHarborApp(
     pdfShareState: PdfShareState = PdfShareState.Idle,
     pageExportState: PageExportState = PageExportState.Idle,
     ocrUiState: OcrUiState = OcrUiState.Idle,
+    ocrSelectedPageIndex: Int = 0,
+    scannedPageUris: List<Uri> = emptyList(),
+    onOcrSelectedPageChange: (Int) -> Unit = {},
     searchablePdfSaveState: SearchablePdfSaveState = SearchablePdfSaveState.Idle,
     onScanDocument: () -> Unit = {},
     onSavePdf: () -> Unit = {},
@@ -92,6 +96,9 @@ fun PageHarborApp(
         currentScreen == PageHarborScreen.OcrResult && ocrUiState is OcrUiState.Success -> {
             OcrResultScreen(
                 result = ocrUiState.result,
+                pageUris = scannedPageUris,
+                selectedPageIndex = ocrSelectedPageIndex,
+                onSelectedPageChange = onOcrSelectedPageChange,
                 snackbarHostState = snackbarHostState,
                 onBack = { navigateTo(PageHarborScreen.ScanResult) },
                 onRecognizeAgain = {

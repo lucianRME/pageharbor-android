@@ -49,6 +49,7 @@ class PageHarborSessionViewModelTest {
         assertEquals(PageHarborScreen.ScanResult, session.screen)
         assertEquals(replacement, session.scannerState)
         assertEquals(OcrUiState.Idle, session.ocrUiState)
+        assertEquals(0, session.ocrSelectedPageIndex)
     }
 
     @Test
@@ -66,6 +67,7 @@ class PageHarborSessionViewModelTest {
         assertEquals(emptyList<Any>(), session.scannedPageUris)
         assertEquals(null, session.scannedPdfUri)
         assertEquals(OcrUiState.Idle, session.ocrUiState)
+        assertEquals(0, session.ocrSelectedPageIndex)
     }
 
     @Test
@@ -82,6 +84,32 @@ class PageHarborSessionViewModelTest {
         assertEquals(summary, session.scannerState)
         assertEquals(OcrUiState.Idle, session.ocrUiState)
         assertEquals(SearchablePdfSaveState.Idle, session.searchablePdfSaveState)
+    }
+
+    @Test
+    fun selectedOcrPageSurvivesRecreationButNewScanResetsIt() {
+        val session = PageHarborSessionViewModel()
+        session.replaceScan(scanSummary(pageCount = 3), scannedPdfUri = null, scannedPageUris = emptyList())
+        session.ocrUiState = OcrUiState.Success(
+            OcrResult(
+                listOf(
+                    OcrPageResult(pageIndex = 0, text = "First"),
+                    OcrPageResult(pageIndex = 1, text = "Second"),
+                    OcrPageResult(pageIndex = 2, text = "Third"),
+                ),
+            ),
+        )
+        session.screen = PageHarborScreen.OcrResult
+        session.ocrSelectedPageIndex = 2
+
+        session.resetTransientStateForRecreation()
+
+        assertEquals(PageHarborScreen.OcrResult, session.screen)
+        assertEquals(2, session.ocrSelectedPageIndex)
+
+        session.replaceScan(scanSummary(pageCount = 1), scannedPdfUri = null, scannedPageUris = emptyList())
+
+        assertEquals(0, session.ocrSelectedPageIndex)
     }
 
     private fun scanSummary(pageCount: Int) = ScannerSpikeState.ResultSummary(

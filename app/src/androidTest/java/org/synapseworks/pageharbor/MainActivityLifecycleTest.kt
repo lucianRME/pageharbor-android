@@ -70,6 +70,35 @@ class MainActivityLifecycleTest {
     }
 
     @Test
+    fun selectedOcrPageRemainsSelectedAfterRecreation() {
+        val summary = scanSummary(pageCount = 2)
+        val ocrResult = OcrResult(
+            listOf(
+                OcrPageResult(pageIndex = 0, text = "First"),
+                OcrPageResult(pageIndex = 1, text = "Second"),
+            ),
+        )
+
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                activity.restoreCompletedSessionForTest(
+                    summary = summary,
+                    ocrResult = ocrResult,
+                    screen = PageHarborScreen.OcrResult,
+                    selectedOcrPageIndex = 1,
+                )
+            }
+
+            scenario.recreate()
+
+            scenario.onActivity { activity ->
+                assertEquals(PageHarborScreen.OcrResult, activity.sessionScreenForTest())
+                assertEquals(1, activity.selectedOcrPageForTest())
+            }
+        }
+    }
+
+    @Test
     fun activeSearchablePdfStateResetsToRetryableScanResultAfterRecreation() {
         val summary = scanSummary(pageCount = 1)
 

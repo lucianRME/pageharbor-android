@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Improved OCR Result with a bounded local preview for the selected scanned page, page-specific readable/selectable text, and retained multipage Previous/Next navigation.
+- Refined Home and Scan Result hierarchy with a full-width primary scan action and grouped save/share versus secondary scan actions.
+- Validated the OCR Result preview/text flow, multipage navigation, rotation, dark mode, large text, and TalkBack on Samsung Android 16.
 - Retained stable active Scan Result and completed OCR state across `MainActivity` configuration changes, while cancelling/resetting active work, picker ownership, progress, and transient feedback without automatic restart.
 - Hardened Activity-owned searchable-PDF operations against stale progress and duplicate or superseded preparation completion, and ensured prepared private output is discarded when Activity ownership ends.
 - Hardened searchable-PDF SAF destination failures with safe result categories and private-output cleanup for unavailable, failing, or cancelled streams.

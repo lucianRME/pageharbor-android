@@ -26,6 +26,7 @@ class PageHarborSessionViewModel : ViewModel() {
     var pdfShareState: PdfShareState by mutableStateOf(PdfShareState.Idle)
     var pageExportState: PageExportState by mutableStateOf(PageExportState.Idle)
     var ocrUiState: OcrUiState by mutableStateOf(OcrUiState.Idle)
+    var ocrSelectedPageIndex: Int by mutableStateOf(0)
     var searchablePdfSaveState: SearchablePdfSaveState by mutableStateOf(SearchablePdfSaveState.Idle)
 
     fun replaceScan(
@@ -37,6 +38,7 @@ class PageHarborSessionViewModel : ViewModel() {
         this.scannedPageUris = scannedPageUris
         this.scannerState = scannerState
         ocrUiState = OcrUiState.Idle
+        ocrSelectedPageIndex = 0
         resetTransientState()
         screen = PageHarborScreen.ScanResult
     }
@@ -47,6 +49,7 @@ class PageHarborSessionViewModel : ViewModel() {
         scannedPdfUri = null
         scannedPageUris = emptyList()
         ocrUiState = OcrUiState.Idle
+        ocrSelectedPageIndex = 0
         resetTransientState()
     }
 

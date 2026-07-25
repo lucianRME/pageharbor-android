@@ -10,6 +10,8 @@
     <string name="scan_complete">Scan complete</string>
     <string name="scan_page_ready">%1$d page ready</string>
     <string name="scan_pages_ready">%1$d pages ready</string>
+    <string name="scan_result_export_section">Save and share</string>
+    <string name="scan_result_tools_section">More actions</string>
     <string name="scan_again_action">Scan again</string>
     <string name="home_scan_preparing">Preparing scanner…</string>
     <string name="home_scan_cancelled">Scan cancelled.</string>
@@ -35,6 +37,14 @@
     <string name="ocr_single_page_summary">Text recognized on 1 page</string>
     <string name="ocr_preview_page_heading">Page %1$d</string>
     <string name="ocr_preview_empty_page">No text recognized on this page.</string>
+    <string name="ocr_page_indicator">Page %1$d of %2$d</string>
+    <string name="ocr_previous_page_action">Previous page</string>
+    <string name="ocr_next_page_action">Next page</string>
+    <string name="ocr_document_section_heading">Document</string>
+    <string name="ocr_text_section_heading">Text</string>
+    <string name="ocr_document_preview_description">Scanned document preview, page %1$d of %2$d</string>
+    <string name="ocr_preview_loading">Loading document preview…</string>
+    <string name="ocr_preview_unavailable">Document preview is unavailable.</string>
     <string name="ocr_no_text">No text was recognized in this scan.</string>
     <string name="ocr_partial_failure_warning">Some pages could not be read.</string>
     <string name="ocr_clear_action">Clear</string>

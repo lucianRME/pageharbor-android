@@ -99,6 +99,13 @@ fun ScanResultScreen(
                 ),
             )
 
+            if (result.hasPdf || result.jpegPageCount > 0) {
+                Text(
+                    modifier = Modifier.padding(top = 12.dp),
+                    text = stringResource(R.string.scan_result_export_section),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
             if (result.hasPdf) {
                 Button(
                     modifier = Modifier.fillMaxWidth(),
@@ -125,6 +132,13 @@ fun ScanResultScreen(
                 ) {
                     Text(stringResource(R.string.pdf_share_action))
                 }
+            }
+            if (result.jpegPageCount > 0) {
+                Text(
+                    modifier = Modifier.padding(top = 12.dp),
+                    text = stringResource(R.string.scan_result_tools_section),
+                    style = MaterialTheme.typography.titleMedium,
+                )
             }
             if (result.jpegPageCount > 0) {
                 OutlinedButton(

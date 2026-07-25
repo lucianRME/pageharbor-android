@@ -134,10 +134,10 @@ The local classifier, category-only filename suggester, and searchable-PDF SAF i
 ## ADR-011: Retain Only Stable Active-Session State Across Configuration Changes
 
 Decision:
-Use one Activity-scoped `ViewModel` to retain the current in-memory scan session across `MainActivity` configuration changes. Retain only the current product screen, scan summary, scanner-returned JPEG/PDF URIs, and completed OCR result.
+Use one Activity-scoped `ViewModel` to retain the current in-memory scan session across `MainActivity` configuration changes. Retain only the current product screen, scan summary, scanner-returned JPEG/PDF URIs, completed OCR result, and selected OCR page index.
 
 Rationale:
 The prior Activity-local and Compose-local state returned a user with a completed scan to Home after rotation. A standard retained ViewModel fixes that lifecycle boundary without adding persistent storage, Navigation Compose, or a document library. The retained data is the minimum needed to keep Scan Result and completed OCR Result usable after an Activity recreation.
 
 Consequences:
-No `SavedStateHandle`, database, file persistence, background job, or process-death recovery is introduced. Active OCR, PDF generation, SAF write/picker ownership, transient feedback, coroutine jobs, streams, PdfBox objects, and prepared private exports remain Activity-owned. Recreation cancels or resets that transient work, cleans prepared private output, returns to a stable Scan Result when a completed scan exists, and permits retry. The ViewModel must never retain an Activity, Context, document copies, or logging/analytics data. Final Activity/task destruction ends the in-memory session.
+No `SavedStateHandle`, database, file persistence, background job, or process-death recovery is introduced. Active OCR, PDF generation, SAF write/picker ownership, transient feedback, coroutine jobs, streams, decoded preview bitmaps, PdfBox objects, and prepared private exports remain Activity-owned. Recreation cancels or resets that transient work, cleans prepared private output, returns to a stable Scan Result when a completed scan exists, and permits retry. OCR Result decodes only its current selected scanner JPEG with bounded sampling and has no image cache. The ViewModel must never retain an Activity, Context, document copies, or logging/analytics data. Final Activity/task destruction ends the in-memory session.

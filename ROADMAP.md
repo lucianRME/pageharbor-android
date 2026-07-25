@@ -71,8 +71,9 @@ Current scope is limited to product maturity across the existing Home, Scan Resu
 - Dark-theme readability and existing Material action hierarchy.
 - Consistent product-facing copy and cancellation/error feedback.
 - Large-document reliability validation, including 20-page post-scan processing regression coverage.
+- OCR Result product polish: bounded local preview of the selected scan page, page-specific readable/selectable text, and in-memory multipage navigation; Samsung validation passed for multipage navigation, rotation, dark mode, large text, and TalkBack.
 
-This milestone does not add product features, navigation, storage, permissions, metadata, document categories, cloud services, or analytics. Manual Samsung accessibility and layout validation remains in progress; this milestone is not complete.
+This milestone does not add document storage, app-level navigation, permissions, metadata, document categories, cloud services, or analytics. Further v0.6 maturity work remains; this milestone is not complete.
 
 ## Planned MVP
 

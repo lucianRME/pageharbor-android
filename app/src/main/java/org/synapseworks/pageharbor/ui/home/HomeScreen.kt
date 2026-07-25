@@ -114,7 +114,9 @@ fun HomeScreen(
                         textAlign = TextAlign.Center,
                     )
                     Button(
-                        modifier = Modifier.padding(top = 40.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 40.dp),
                         enabled = scannerSpikeState != ScannerSpikeState.Preparing,
                         onClick = onScanDocument,
                     ) {
@@ -156,7 +158,7 @@ fun HomeScreen(
                         Text(text = stringResource(R.string.home_about_action))
                     }
                     Text(
-                        modifier = Modifier.padding(top = 32.dp),
+                        modifier = Modifier.padding(top = 24.dp),
                         text = stringResource(R.string.home_footer),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -164,7 +166,7 @@ fun HomeScreen(
                     )
                     if (showDevelopmentStatus) {
                         Text(
-                            modifier = Modifier.padding(top = 16.dp),
+                            modifier = Modifier.padding(top = 12.dp),
                             text = stringResource(
                                 R.string.home_debug_build_label,
                                 versionName,
