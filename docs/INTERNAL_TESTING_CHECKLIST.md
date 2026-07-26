@@ -57,6 +57,18 @@ ML Kit data disclosure and Play Data safety guidance immediately before submissi
   OCR, searchable PDF, cancellation/retry, rotation, and uninstall/reinstall behavior.
 - [ ] Review crashes/ANRs and privacy feedback without collecting document data.
 
+## v0.8 beta regression handoff
+
+- [ ] Confirm the tester sees the expected version and version code in About PageHarbor.
+- [ ] For local verification only, confirm the build type is `releaseVerification`; this label and
+  Git revision must not appear in a production release.
+- [ ] Perform the update, clean-install, lifecycle, output, OCR, and repeated-session checks in
+  [BETA_SMOKE_TEST.md](BETA_SMOKE_TEST.md).
+- [ ] Record device evidence in [DEVICE_COMPATIBILITY.md](DEVICE_COMPATIBILITY.md), using
+  **planned** rather than claiming untested compatibility.
+- [ ] File failures with [BUG_REPORT_TEMPLATE.md](BUG_REPORT_TEMPLATE.md) and reject sensitive
+  attachments, OCR text, full paths, and unredacted logs.
+
 ## Before any wider rollout
 
 - [ ] Re-run the release build, unit, lint, and connected-device gates.

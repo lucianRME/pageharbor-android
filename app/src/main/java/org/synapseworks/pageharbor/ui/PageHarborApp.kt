@@ -147,7 +147,8 @@ fun PageHarborApp(
         else -> HomeScreen(
             snackbarHostState = snackbarHostState,
             scannerSpikeState = scannerSpikeState,
-            showDevelopmentStatus = BuildConfig.DEBUG,
+            showBuildDetails = BuildConfig.SHOW_BUILD_DETAILS,
+            buildTypeLabel = BuildConfig.BUILD_TYPE_LABEL,
             versionName = BuildConfig.VERSION_NAME,
             versionCode = BuildConfig.VERSION_CODE,
             gitRevision = BuildConfig.GIT_REVISION,

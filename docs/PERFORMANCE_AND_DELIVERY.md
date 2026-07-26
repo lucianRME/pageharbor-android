@@ -1,6 +1,7 @@
 # Performance and Delivery Validation
 
-Status: `v0.7.0-dev` baseline and release-verification validation.
+Status: `v0.7.0-dev` baseline and release-verification validation; `v0.8.0-dev` retains the same
+releaseVerification approach for beta regression smoke.
 
 ## Scope and method
 
@@ -26,7 +27,7 @@ activity. Home content was checked after the measurements.
 
 The first warm return (27 ms) is the only visible warm outlier. The sample is intentionally a
 small device smoke, not a performance certification. Source review confirms that Home launches
-only Compose and an asynchronous stale-share-cache cleanup; scanner client creation is
+only Compose and asynchronous stale app-owned cache cleanup; scanner client creation is
 user-triggered, the app creates an ML Kit recognizer only for explicit OCR on `Dispatchers.IO`,
 and PDFBox initializes only while generating a searchable PDF. The packaged ML Kit component
 provider remains an existing library manifest initializer, so its isolated contribution cannot be

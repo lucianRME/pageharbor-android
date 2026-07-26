@@ -87,7 +87,7 @@
     <string name="page_export_default_filename" translatable="false">Document-%1$d.jpg</string>
     <string name="home_privacy_action">How privacy works</string>
     <string name="home_about_action">About PageHarbor</string>
-    <string name="home_debug_build_label">v%1$s (%2$d) · %3$s</string>
+    <string name="home_debug_build_label">v%1$s (%2$d) · %3$s · %4$s</string>
     <string name="home_footer">No account · No ads · Local document handling</string>
     <string name="home_privacy_dialog_title">How privacy works</string>
     <string name="home_privacy_dialog_local_processing">Documents are intended to be processed locally.</string>
@@ -100,8 +100,8 @@
     <string name="about_tagline">Private document scanner for Android</string>
     <string name="about_version">Version: %1$s</string>
     <string name="about_build_number">Build: %1$d</string>
+    <string name="about_build_type">Build type: %1$s</string>
     <string name="about_git_revision">Git revision: %1$s</string>
-    <string name="about_developed_by">Developed by Lucian Irimie</string>
     <string name="about_published_under">Published under SynapseWorks</string>
     <string name="about_license">Open source under Apache License 2.0</string>
     <string name="about_view_source">View source code</string>

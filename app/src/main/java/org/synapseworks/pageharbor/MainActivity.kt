@@ -46,6 +46,7 @@ import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfOperation
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfPreparedExport
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfSaveError
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfSaveState
+import org.synapseworks.pageharbor.document.searchablepdf.deleteStaleSearchablePdfs
 import org.synapseworks.pageharbor.document.searchablepdf.isInProgress
 import org.synapseworks.pageharbor.document.searchablepdf.searchablePdfSaveStateForProgress
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
@@ -204,6 +205,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         lifecycleScope.launch(Dispatchers.IO) {
             deleteStaleSharedPdfs(cacheDir)
+            deleteStaleSearchablePdfs(cacheDir)
         }
         setContent {
             PageHarborApp(

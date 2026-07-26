@@ -67,11 +67,13 @@ android {
         applicationId = "org.synapseworks.pageharbor"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
-        versionName = "0.7.0-dev"
+        versionCode = 8
+        versionName = "0.8.0-dev"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GIT_REVISION", "\"unknown\"")
+        buildConfigField("String", "BUILD_TYPE_LABEL", "\"release\"")
+        buildConfigField("boolean", "SHOW_BUILD_DETAILS", "false")
     }
 
     signingConfigs {
@@ -88,6 +90,8 @@ android {
     buildTypes {
         debug {
             buildConfigField("String", "GIT_REVISION", "\"${gitRevisionForDebugBuild()}\"")
+            buildConfigField("String", "BUILD_TYPE_LABEL", "\"debug\"")
+            buildConfigField("boolean", "SHOW_BUILD_DETAILS", "true")
         }
 
         release {
@@ -106,6 +110,9 @@ android {
             initWith(getByName("release"))
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += listOf("release")
+            buildConfigField("String", "GIT_REVISION", "\"${gitRevisionForDebugBuild()}\"")
+            buildConfigField("String", "BUILD_TYPE_LABEL", "\"releaseVerification\"")
+            buildConfigField("boolean", "SHOW_BUILD_DETAILS", "true")
         }
     }
 

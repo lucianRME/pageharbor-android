@@ -1,6 +1,6 @@
 # Lifecycle and Failure Validation
 
-Status: completed for `v0.6.0-dev`.
+Status: `v0.6.0-dev` lifecycle closure with `v0.8.0-dev` beta-readiness follow-up in progress.
 
 ## Ownership model
 
@@ -13,6 +13,31 @@ On scan replacement, Discard, or Activity destruction, the activity invalidates 
 Cancellation propagates through PDF generation and streamed destination copy. It is not mapped to a generic provider or generation failure. Picker cancellation discards the prepared output and leaves the Scan Result retryable. A stale Activity Result callback has no owned prepared export and is ignored safely; it cannot initiate a write for a newer export.
 
 No active-operation recovery is attempted after process death or Activity recreation. On recreation, stable scan/OCR state remains available in memory, while active work is cleaned up and the user can retry from the restored Scan Result. Process death starts a new active scan session.
+
+## Update and process-reset boundary
+
+An APK update preserves Android app-private storage and cache unless Android or the user clears it,
+but PageHarbor persists no scan session, OCR result, picker ownership, or document library. A fresh
+process after an update therefore starts at Home; it must not restore document content or progress.
+User-selected SAF exports remain outside PageHarbor ownership. Shared-PDF cache files older than 24
+hours and searchable-PDF cache files matching the app-owned `searchable-*.pdf` naming boundary are
+cleaned asynchronously at a later startup. The cleanup never traverses directories, deletes active
+files, or touches SAF destinations.
+
+### `v0.8.0-dev` local update evidence
+
+On Samsung SM-S938B / Android 16, a temporary detached `v0.7.0-dev` worktree built the
+debug-signed minified `releaseVerification` APK. Android installed that APK, then accepted the
+`v0.8.0-dev` `releaseVerification` APK over the same package without uninstalling. The updated
+package reported version code 8/version name `0.8.0-dev` and launched `MainActivity` after a
+force-stop. This was deliberately performed with no active operation; no migration or persistent
+session is required. A subsequent uninstall and clean `v0.8.0-dev` install also launched normally,
+and its app-private cache/files/database/shared-preferences inventory was empty. Normal downgrade
+was not attempted and is not a user-supported path.
+
+The v0.8 beta smoke protocol retains manual checks for process kill during scanner/OCR/PDF work,
+two sequential document sessions, and five repeated sessions using non-sensitive documents. They
+are not inferred from the update installation check.
 
 ## Deterministic coverage
 

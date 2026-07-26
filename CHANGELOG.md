@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Started `v0.8.0-dev` internal-beta readiness, update-path validation, and defect-discovery work.
+- Synchronized the package version to `0.8.0-dev` (version code 8).
+- Added debug and local releaseVerification build identification while keeping production release
+  build details and Git revision hidden.
+- Added stale, app-owned searchable-PDF cache cleanup with deterministic ownership and age tests.
+- Added beta smoke, tester, defect-reporting, and device-compatibility documentation.
+
+## [0.7.0-dev]
+
+### Changed
+
 - Started `v0.7.0-dev` production release foundation work.
 - Prepared release builds for R8 minification and resource shrinking, with a separate debug-signed release-verification artifact for local smoke testing.
 - Added conditional Play upload-signing configuration using ignored local properties or environment variables; no keystore, alias, or password is stored in the repository.

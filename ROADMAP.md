@@ -98,10 +98,20 @@ privacy-policy URL and contact, current Play Console declarations, store assets,
 the applicable Google terms. Those prerequisites are tracked in
 [`docs/INTERNAL_TESTING_CHECKLIST.md`](docs/INTERNAL_TESTING_CHECKLIST.md).
 
-### `v0.8.0-dev` — Planned
+### `v0.8.0-dev` — In progress
 
-- No scope has been approved. Any future increment must begin with a separately reviewed plan and
-  preserve the local-document, no-account, no-cloud-storage boundaries.
+- Establish controlled internal-beta readiness without publishing to Google Play.
+- Validate a local debug-signed update path from `v0.7.0-dev` to `v0.8.0-dev`, clean install, and
+  the documented no-downgrade expectation.
+- Make debug and local `releaseVerification` builds identifiable without exposing build details in
+  a production release.
+- Add a concise beta smoke protocol, privacy-safe defect template, tester guide, and honest device
+  compatibility matrix.
+- Validate interruption/reset behavior, repeated sessions, and app-owned temporary-cache cleanup.
+
+This milestone does not add a document library, accounts, cloud sync, PageHarbor analytics or crash
+SDKs, advertising, OCR language downloads, advanced image editing, new AI features, automatic
+document retention, new permissions, or Play publication.
 
 ## Planned MVP
 

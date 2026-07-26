@@ -51,7 +51,8 @@ import org.synapseworks.pageharbor.ocr.textFoundPageCount
 fun HomeScreen(
     snackbarHostState: SnackbarHostState,
     scannerSpikeState: ScannerSpikeState,
-    showDevelopmentStatus: Boolean,
+    showBuildDetails: Boolean,
+    buildTypeLabel: String,
     versionName: String,
     versionCode: Int,
     gitRevision: String,
@@ -164,13 +165,14 @@ fun HomeScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                         textAlign = TextAlign.Center,
                     )
-                    if (showDevelopmentStatus) {
+                    if (showBuildDetails) {
                         Text(
                             modifier = Modifier.padding(top = 12.dp),
                             text = stringResource(
                                 R.string.home_debug_build_label,
                                 versionName,
                                 versionCode,
+                                buildTypeLabel,
                                 gitRevision,
                             ),
                             style = MaterialTheme.typography.labelLarge,
@@ -189,7 +191,8 @@ fun HomeScreen(
 
     if (showAbout) {
         AboutDialog(
-            showDebugBuildInfo = showDevelopmentStatus,
+            showBuildDetails = showBuildDetails,
+            buildTypeLabel = buildTypeLabel,
             versionName = versionName,
             versionCode = versionCode,
             gitRevision = gitRevision,
@@ -490,7 +493,8 @@ private fun PrivacyInfoDialog(onDismiss: () -> Unit) {
 
 @Composable
 private fun AboutDialog(
-    showDebugBuildInfo: Boolean,
+    showBuildDetails: Boolean,
+    buildTypeLabel: String,
     versionName: String,
     versionCode: Int,
     gitRevision: String,
@@ -515,10 +519,10 @@ private fun AboutDialog(
                 Text(text = stringResource(R.string.about_tagline))
                 Text(text = stringResource(R.string.about_version, versionName))
                 Text(text = stringResource(R.string.about_build_number, versionCode))
-                if (showDebugBuildInfo) {
+                if (showBuildDetails) {
+                    Text(text = stringResource(R.string.about_build_type, buildTypeLabel))
                     Text(text = stringResource(R.string.about_git_revision, gitRevision))
                 }
-                Text(text = stringResource(R.string.about_developed_by))
                 Text(text = stringResource(R.string.about_published_under))
                 Text(text = stringResource(R.string.about_license))
             }

@@ -79,7 +79,8 @@ class HomeScreenTest {
         }
 
         composeTestRule.onNodeWithText(
-            "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · ${BuildConfig.GIT_REVISION}",
+            "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · " +
+                "${BuildConfig.BUILD_TYPE_LABEL} · ${BuildConfig.GIT_REVISION}",
         ).assertIsDisplayed()
         assertTrue(BuildConfig.GIT_REVISION.isNotBlank())
     }
@@ -555,9 +556,9 @@ class HomeScreenTest {
             .assertIsDisplayed()
         composeTestRule.onNodeWithText("Build: ${BuildConfig.VERSION_CODE}")
             .assertIsDisplayed()
-        composeTestRule.onNodeWithText("Git revision: ${BuildConfig.GIT_REVISION}")
+        composeTestRule.onNodeWithText("Build type: ${BuildConfig.BUILD_TYPE_LABEL}")
             .assertIsDisplayed()
-        composeTestRule.onNodeWithText("Developed by Lucian Irimie")
+        composeTestRule.onNodeWithText("Git revision: ${BuildConfig.GIT_REVISION}")
             .assertIsDisplayed()
         composeTestRule.onNodeWithText("Published under SynapseWorks")
             .assertIsDisplayed()

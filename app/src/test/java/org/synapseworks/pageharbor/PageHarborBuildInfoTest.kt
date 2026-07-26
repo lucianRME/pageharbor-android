@@ -12,8 +12,8 @@ class PageHarborBuildInfoTest {
 
     @Test
     fun versionMetadataMatchesConfiguredValue() {
-        assertEquals("0.7.0-dev", BuildConfig.VERSION_NAME)
-        assertEquals(7, BuildConfig.VERSION_CODE)
+        assertEquals("0.8.0-dev", BuildConfig.VERSION_NAME)
+        assertEquals(8, BuildConfig.VERSION_CODE)
     }
 
     @Test
@@ -21,5 +21,15 @@ class PageHarborBuildInfoTest {
         assertFalse(BuildConfig.GIT_REVISION.isBlank())
         assertFalse(BuildConfig.GIT_REVISION.contains("/"))
         assertFalse(BuildConfig.GIT_REVISION.contains("\\"))
+    }
+
+    @Test
+    fun productionBuildIdentityDoesNotExposeBuildDetails() {
+        if (BuildConfig.SHOW_BUILD_DETAILS) {
+            assertFalse(BuildConfig.BUILD_TYPE_LABEL == "release")
+        } else {
+            assertEquals("release", BuildConfig.BUILD_TYPE_LABEL)
+            assertEquals("unknown", BuildConfig.GIT_REVISION)
+        }
     }
 }
