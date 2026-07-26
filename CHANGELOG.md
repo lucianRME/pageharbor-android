@@ -14,6 +14,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   build details and Git revision hidden.
 - Added stale, app-owned searchable-PDF cache cleanup with deterministic ownership and age tests.
 - Added beta smoke, tester, defect-reporting, and device-compatibility documentation.
+- Recorded partial Samsung beta-matrix evidence for releaseVerification gallery import and cancelled
+  JPEG SAF export; unavailable emulator, tablet, lower-resource, and active-operation checks remain
+  documented gaps.
 
 ## [0.7.0-dev]
 

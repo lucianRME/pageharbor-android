@@ -67,3 +67,10 @@ The prior rotation defect is fixed in production: an Activity-scoped in-memory s
 After the fix, a Samsung manual rotation sequence passed: a fresh Scan Result survived portrait-to-landscape-to-portrait rotation with its actions available; searchable-PDF picker cancellation returned to Scan Result; rotation before retry did not cause a duplicate picker or false error; and a retry saved successfully. Completed OCR Result also survived rotation, Back returned to Scan Result, Discard returned Home, and a fresh scan showed no old scan/OCR feedback. No crash or permission prompt occurred.
 
 Physical third-party provider behavior and a physical mid-copy provider failure remain unvalidated. No physical process-death recovery is supported or planned.
+
+## v0.8 beta matrix follow-up
+
+The partial Samsung execution is recorded in [BETA_MATRIX_RESULTS.md](BETA_MATRIX_RESULTS.md). It
+confirmed gallery-import scanner return and cancelled JPEG SAF behavior on releaseVerification. It
+did not complete active OCR/searchable-PDF interruption, five consecutive sessions, or process-kill
+manual coverage; those remain explicit beta tasks rather than release claims.

@@ -3,6 +3,9 @@
 Use only non-sensitive sample pages. This is a 10–15 minute manual smoke, not a request to upload
 anything to Google Play.
 
+Record completed and blocked items in [BETA_MATRIX_RESULTS.md](BETA_MATRIX_RESULTS.md); do not mark
+an item passed solely because a deterministic test covers a related boundary.
+
 ## Before starting
 
 - Record the version, build code, and build type from **About PageHarbor**.
