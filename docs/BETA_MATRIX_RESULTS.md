@@ -7,8 +7,8 @@ Status: partial `v0.8.0-dev` execution on 26 July 2026. This records only observ
 | Target | Configuration | Result |
 | --- | --- | --- |
 | Samsung SM-S938B | Android 16, 1080×2340, releaseVerification | Partial manual smoke passed |
-| `PageHarbor_API_36` | Installed API 36 AVD | Blocked: emulator exited before ADB registration |
-| Lower-resource API 30–35 | No installed AVD profile | Blocked |
+| API 36 emulator | Android 16/API 36 Google Play ARM64, releaseVerification | Recovered; Home and system-scanner entry passed; 98/98 debug connected tests passed |
+| API 31 emulator | Android 12/API 31 Google APIs ARM64, 2 GB RAM/two cores at runtime, releaseVerification | Established; Home passed; 98/98 debug connected tests passed |
 | Tablet / large-screen | No installed or attached target | Blocked |
 | API 26/27 boundary | No installed or attached target | Blocked |
 
@@ -26,6 +26,27 @@ Status: partial `v0.8.0-dev` execution on 26 July 2026. This records only observ
 
 The transient gallery fixtures, screenshots, external scanner UI hierarchy dumps, and device copies
 were removed immediately after this run.
+
+## Emulator recovery and API compatibility increment
+
+- The host supports Android Emulator acceleration. A recovered Android 16/API 36 Google Play ARM64
+  profile and a newly created Android 12/API 31 Google APIs ARM64 profile both cold-booted, reached
+  ADB, and remained running. The API 31 profile was run at 2 GB RAM and two cores; it is an
+  emulator resource profile, not a physical low-memory-device claim.
+- The local minified, debug-signed `releaseVerification` artifact installed and launched on both
+  emulators. Both Home screens displayed `v0.8.0-dev (8) · releaseVerification`; package metadata
+  reported `minSdk 26`, `targetSdk 36`, and no `INTERNET` permission.
+- API 36 opened ML Kit Document Scanner with capture and gallery-import controls. No scanner,
+  ML Kit initialization, or PageHarbor crash was observed. Its headless camera surface did not
+  settle sufficiently for deterministic coordinate/hierarchy automation, so this is not a claim
+  that an emulator gallery import completed.
+- The full debug connected suite passed on both targets: API 31: 98 total, 98 completed,
+  0 failures, 0 errors, 0 skipped (158.237 s); API 36: 98 total, 98 completed, 0 failures,
+  0 errors, 0 skipped (136.422 s). This includes deterministic OCR-engine, searchable-PDF,
+  FileProvider share-intent, lifecycle/session-reset, and 200% font reachability coverage.
+- No PageHarbor defect was reproduced. The original API 36 failure was local emulator process
+  handling; the API 31 image first landed under the command-line-tools SDK root rather than the
+  emulator SDK root, then was installed into the configured SDK root and booted normally.
 
 ## Interruption and recovery
 
@@ -47,7 +68,7 @@ were removed immediately after this run.
 
 ## Defects and limitations
 
-No PageHarbor defect was found in the executed flow. The API 36 emulator launch failure is an
-environment limitation, not evidence of API 36 incompatibility. The unexecuted lower-memory,
-tablet, lower-API, five-session, multipage OCR, searchable-PDF, share, and active-operation
-interruption checks remain beta gaps.
+No PageHarbor defect was found in the executed flow. The original API 36 emulator launch failure
+was recovered and is not evidence of API 36 incompatibility. The unexecuted physical lower-memory,
+tablet, lower-API, five-session, multipage OCR, full emulator gallery-to-SAF/searchable-PDF/share,
+and active-operation interruption checks remain beta gaps.
