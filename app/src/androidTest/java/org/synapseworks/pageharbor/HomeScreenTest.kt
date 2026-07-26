@@ -518,7 +518,13 @@ class HomeScreenTest {
             .assertIsDisplayed()
         composeTestRule.onNodeWithText("Users will choose where exported files are saved or shared.")
             .assertIsDisplayed()
-        composeTestRule.onNodeWithText("No analytics, advertising, or tracking are used.")
+        composeTestRule.onNodeWithText(
+            "PageHarbor does not operate advertising, tracking, or analytics.",
+        )
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText(
+            "Google ML Kit may send encrypted technical diagnostics. It does not send your document images or recognized text.",
+        )
             .assertIsDisplayed()
     }
 

@@ -10,9 +10,9 @@ See [ROADMAP.md](ROADMAP.md) for the current project roadmap.
 
 ## Core commitments
 
-- Offline scanning and document processing
+- On-device document and OCR content processing
 - No ads
-- No tracking or analytics
+- No PageHarbor-operated tracking or analytics
 - No account or login
 - Open-source development
 
@@ -38,6 +38,11 @@ See [ROADMAP.md](ROADMAP.md) for the current project roadmap.
 - Android Storage Access Framework
 
 PageHarbor's privacy-first architecture keeps document processing on the device and lets users choose where files are saved or shared. Filename suggestions never contain OCR-derived names, dates, amounts, identifiers, addresses, or other document values. PDF metadata is intentionally excluded from `v0.5.0-dev`. Cloud providers such as Google Drive or OneDrive may appear only as destinations through the Android system file picker. PageHarbor does not operate proprietary cloud storage, use cloud OCR or AI services, or directly access those services.
+
+Google ML Kit is a separately licensed Google SDK. Its documented technical diagnostics can be
+encrypted and sent to Google, but document images and recognized text are processed on-device and
+are not sent by ML Kit. See [PRIVACY.md](PRIVACY.md) and
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) before distribution.
 
 Scanner acquisition remains limited to the validated 10-page setting. The post-scan searchable-PDF engine has deterministic 20-page regression coverage, but PageHarbor does not claim universal external viewer or SAF-provider compatibility, full accessibility certification, low-end-device validation, or process-death recovery.
 

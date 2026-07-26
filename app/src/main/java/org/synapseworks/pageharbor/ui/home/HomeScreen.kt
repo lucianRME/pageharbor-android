@@ -477,6 +477,7 @@ private fun PrivacyInfoDialog(onDismiss: () -> Unit) {
                 Text(text = stringResource(R.string.home_privacy_dialog_no_cloud))
                 Text(text = stringResource(R.string.home_privacy_dialog_user_choice))
                 Text(text = stringResource(R.string.home_privacy_dialog_no_tracking))
+                Text(text = stringResource(R.string.home_privacy_dialog_mlkit_metrics))
             }
         },
         confirmButton = {

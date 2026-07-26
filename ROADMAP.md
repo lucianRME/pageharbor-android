@@ -74,7 +74,7 @@ PDF metadata was intentionally excluded from `v0.5.0-dev`. Alternate SAF-provide
 
 This milestone does not add document storage, app-level navigation, permissions, metadata, document categories, cloud services, analytics, or process-death recovery.
 
-### `v0.7.0-dev` — In progress
+### `v0.7.0-dev` — Complete
 
 - Establish production release signing architecture with ignored local configuration and CI environment-variable support.
 - Enable release minification and resource shrinking, then verify a debug-signed release-equivalent installation.
@@ -83,8 +83,25 @@ This milestone does not add document storage, app-level navigation, permissions,
   no Play download-size claim is made from this local analysis.
 - Harden SAF and private-cache failure handling so unavailable source/destination streams never
   report success and prepared private output remains subject to cleanup.
+- Complete release-readiness review of dependency licenses, bundled Liberation Sans OFL handling,
+  backup/data-extraction behavior, signing boundaries, Data safety drafting, and internal-test
+  prerequisites.
+- Publish the source privacy-policy text, third-party notices, dependency/license audit, and a
+  future Google Play internal-testing checklist. ML Kit technical diagnostics are disclosed
+  separately from PageHarbor's local document-content processing.
 
 Limits carried forward: scanner acquisition remains capped at 10 pages; the 20-page regression covers post-scan searchable-PDF processing only. Process-death recovery is unsupported. No new end-user feature work is part of `v0.7.0-dev`.
+
+The checked repository is ready for its `v0.7.0-dev` commit and tag after owner review. Google
+Play upload remains an owner-controlled follow-up: it requires an upload key, a hosted public
+privacy-policy URL and contact, current Play Console declarations, store assets, and acceptance of
+the applicable Google terms. Those prerequisites are tracked in
+[`docs/INTERNAL_TESTING_CHECKLIST.md`](docs/INTERNAL_TESTING_CHECKLIST.md).
+
+### `v0.8.0-dev` — Planned
+
+- No scope has been approved. Any future increment must begin with a separately reviewed plan and
+  preserve the local-document, no-account, no-cloud-storage boundaries.
 
 ## Planned MVP
 

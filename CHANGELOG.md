@@ -19,6 +19,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   malformed URIs, and close an already-open normal-PDF destination when its source is missing.
 - Added deterministic private-cache, source-provider, short-stream, write, flush, close,
   cancellation, and cleanup coverage for export failure paths.
+- Completed the `v0.7.0-dev` release-readiness audit: dependency/license inventory, third-party
+  notices, public privacy-policy source, backup/data-extraction confirmation, and future Google
+  Play internal-testing checklist.
+- Corrected public and in-app privacy wording to distinguish PageHarbor's local document handling
+  from ML Kit's documented encrypted technical diagnostics; document images and OCR text remain
+  on-device.
 
 ## [0.6.0-dev]
 

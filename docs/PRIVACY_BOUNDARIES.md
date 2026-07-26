@@ -21,15 +21,20 @@ Temporary file ownership and cleanup must be explicit in implementation, includi
 
 ## External Components
 
-The intended scanner may be provided through Google Play Services.
+The scanner and OCR stack are provided through Google ML Kit and Google Play services.
 
 Assumptions requiring implementation validation:
 
-- Scanning and processing are intended to occur on-device.
-- Required scanner components may need to be downloaded by Google Play Services.
+- Document scanning and OCR content processing occur on-device; document images and recognized text
+  are not sent to Google by ML Kit.
+- Required scanner components may need to be downloaded or updated by Google Play Services.
 - PageHarbor itself should not require the INTERNET permission for this flow.
+- ML Kit may transmit encrypted technical diagnostics to Google, including device/app information,
+  feature configuration, performance/error data, and per-installation identifiers. It is a
+  separately licensed external SDK, not PageHarbor-operated analytics.
 - Google Play Services is an external platform dependency with its own behavior and privacy terms.
-- Public privacy wording must reflect the real first-run and ongoing scanner behavior observed during implementation.
+- Public privacy wording and Play Data safety declarations must reflect this SDK collection and the
+  real first-run and ongoing scanner behavior observed during implementation.
 
 Do not claim absolute offline behavior until implementation testing confirms the real behavior on physical devices.
 
@@ -44,9 +49,11 @@ Google Drive, OneDrive, Dropbox, or other providers may appear in Android's syst
 
 ## Backup
 
-Application-managed private scan data should not be included in Android automatic backup.
-
-If temporary or private document files are introduced, implementation must verify that backup rules exclude them or that they are not stored in locations eligible for backup.
+Android automatic backup is disabled with `android:allowBackup="false"`. The backup and data
+extraction rules additionally exclude all private root, files, database, shared-preferences, and
+external domains from cloud backup and device transfer. The exclusions are defense in depth for
+older/platform-specific backup behavior; no document, OCR, cache, or private app data is intended
+to be backed up or transferred by PageHarbor.
 
 ## Logging And Debugging
 

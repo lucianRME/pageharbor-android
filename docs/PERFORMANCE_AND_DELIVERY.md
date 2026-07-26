@@ -8,8 +8,9 @@ Measurements use the minified, resource-shrunk `releaseVerification` variant on 
 SM-S938B, Android 16, ABI `arm64-v8a`. It is debug-signed solely for local installation; its
 release code and resources match the unsigned `release` verification artifact. Android's
 `am start -W` measures activity-display timing, not a full application-process trace. No
-telemetry, tracing upload, benchmark dependency, or PageHarbor startup initializer was added for
-this work.
+PageHarbor telemetry, tracing upload, benchmark dependency, or PageHarbor startup initializer was
+added for this work. ML Kit's separately documented technical diagnostics remain an external SDK
+behavior and are disclosed in `PRIVACY.md`.
 
 For cold starts, the app was force-stopped before each launch. For warm starts, Home was sent to
 the background and brought back through Android. A hot relaunch targeted the already foreground

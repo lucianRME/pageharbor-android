@@ -106,7 +106,7 @@ The bundled Latin model is available without a first-use model download, support
 Consequences:
 OCR output is sensitive document content: it stays local to the active session, remains in memory by default rather than being retained permanently, and is never logged or sent to a backend. Copy Text is explicit user action. PageHarbor does not recreate crop, rotate, filters, deletion, or reordering that ML Kit already provides in the scanner flow. The bundled model avoids a first-use OCR model download; this local-only design does not make claims about app-store or platform-service installation and update behavior.
 
-ML Kit dependencies may declare non-exported component-discovery metadata required for their local initialization. PageHarbor removes their transitive CCT transport discovery and scheduling components during manifest merging: it does not use analytics or telemetry transport, and it requests no network permission.
+ML Kit dependencies may declare non-exported component-discovery metadata required for their local initialization. PageHarbor removes their transitive CCT transport discovery and scheduling components during manifest merging and requests no network permission. This does not override ML Kit's separately documented SDK behavior: ML Kit may send encrypted technical diagnostics to Google. Public privacy wording and the Play Data safety declaration must disclose that SDK collection while continuing to distinguish it from document content, which ML Kit documents as on-device.
 
 ## ADR-009: Local Searchable PDF Composition
 

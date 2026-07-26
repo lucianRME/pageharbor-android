@@ -1,23 +1,76 @@
-# Privacy Design and Commitments
+# PageHarbor Privacy Policy
 
-PageHarbor is in early development. This document describes the intended architecture and privacy commitments; it is not a final legal privacy policy for Google Play or any other distribution platform.
+Effective date: 26 July 2026
 
-## Local processing
+PageHarbor is an Android document scanner published by SynapseWorks. This policy describes the
+`org.synapseworks.pageharbor` application, version `0.7.0-dev` and later versions that retain the
+same practices. It is written for users and for a future Google Play listing.
 
-PageHarbor is designed to process documents locally on the user's Android device. No account or login is required. The project does not intend to include advertising, analytics, tracking, or telemetry.
+## What PageHarbor does with documents
 
-No document contents should be written to logs. Temporary files should be limited to what core functionality requires and removed when they are no longer needed, including after errors or cancelled operations.
+PageHarbor processes scan images, OCR text, and searchable-PDF text layers on the device. It does
+not operate a document backend, cloud storage service, account system, advertising service, or its
+own analytics or tracking service. PageHarbor does not send document images, OCR text, or generated
+PDF content to a PageHarbor server because it has no such server.
 
-## Storage and sharing
+Pages and OCR results are active-session data. OCR text is held in memory unless the user explicitly
+copies it. A temporary searchable PDF or share copy may be held in the app cache only while it is
+needed for the requested save, share, retry, or cleanup operation. PageHarbor removes prepared
+searchable PDFs after success, failure, cancellation, or discard; completed share copies are cache
+data and are cleaned when stale. PageHarbor disables Android backup and excludes its private data
+from cloud backup and device transfer.
 
-PageHarbor does not operate cloud storage. Users may choose local storage or a third-party storage provider through Android system interfaces, such as the system file picker or share sheet.
+## Saving and sharing
 
-When a user chooses a third-party provider, such as Google Drive or OneDrive, PageHarbor passes the user-selected file through the Android system interface. The provider's own privacy policy and practices apply to its handling of that file.
+PageHarbor uses Android's system file picker for saving and Android's share sheet for sharing. The
+user chooses the destination or receiving app. If the user selects a third-party storage provider or
+share target, that provider handles the selected file under its own terms and privacy policy.
+PageHarbor does not receive that provider's account credentials.
 
-## Permissions and access
+## Google ML Kit and Google Play services
 
-Camera and file access will be requested only when needed for core, user-initiated functionality. PageHarbor intends to use scoped Android system access and to avoid the Android `INTERNET` permission.
+PageHarbor uses Google ML Kit Document Scanner and bundled ML Kit Text Recognition. Document
+scanning and OCR content processing occur on-device. According to Google's ML Kit documentation,
+the SDK does not send document images, video, text input, or text-recognition output to Google.
 
-## Keeping this document current
+ML Kit may send encrypted technical diagnostics to Google. Google documents these as device and app
+information, feature/configuration information, performance and error data, and per-installation
+identifiers used for diagnostics, reliability, compatibility, and improvement. This is SDK data
+collection outside PageHarbor's own code; it is not advertising and does not include document
+content. ML Kit and Google Play services are governed by Google's terms and privacy practices.
 
-These statements describe the project's intended design during early development, not verified claims about a completed application. This document must be reviewed and updated if the implementation, permissions, data handling, dependencies, or storage behavior changes.
+The document scanner may obtain scanner resources through Google Play services. Consequently,
+PageHarbor does not promise that a device can acquire or update every Google-provided component
+without network access, even though the app declares no `INTERNET` permission and does not itself
+send document content to a server.
+
+## Permissions and security
+
+PageHarbor declares no `INTERNET`, broad-storage, account, location, contacts, microphone, phone,
+or advertising permissions. The Google-provided scanner flow owns its camera interaction; PageHarbor
+does not request camera permission directly. Files shared through PageHarbor use a non-exported
+FileProvider with temporary read access limited to the cache subdirectory used for share copies.
+
+## Retention and deletion
+
+PageHarbor does not maintain user accounts or an internal document library, so it has no
+PageHarbor-hosted user-data record to delete. Users control files they save or send through Android;
+they can delete those files from the chosen destination. Android or third-party destination providers
+may apply their own retention policies. For ML Kit diagnostic data, consult Google's applicable
+privacy documentation and request mechanisms.
+
+## Contact and publication requirement
+
+For source and pre-release questions, use the project's issue tracker:
+<https://github.com/lucianRME/pageharbor-android/issues>.
+
+Before any Google Play upload, the release owner must publish this policy at a stable, public,
+non-geofenced HTTPS URL and add a monitored privacy contact for SynapseWorks. The same URL must be
+entered in Play Console and made reachable from the app or its store listing. This repository file
+is the reviewed policy source; it is not itself the final hosted Play URL.
+
+## Changes
+
+If PageHarbor changes its permissions, data handling, dependencies, storage, or sharing behavior,
+SynapseWorks will update this policy and its Google Play Data safety declaration before distributing
+the changed build.
