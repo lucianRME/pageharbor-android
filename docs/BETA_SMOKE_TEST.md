@@ -43,6 +43,11 @@ non-debuggable releaseVerification artifact; record that limitation instead. For
 searchable-PDF interruption, use a fixture large enough for the operation to be visibly active;
 otherwise record the check as unverified rather than treating a quick completion as equivalent.
 
+The deterministic instrumentation suite separately pauses fake OCR and fake searchable-PDF
+generation; it validates ownership, stale-completion rejection, and cleanup without a production
+delay or a tester-accessible control. It complements, but does not replace, physical process-kill
+evidence.
+
 ## Tablet and large-window supplement
 
 When a stable tablet or resizable target is available, repeat the Home, dialog, Scan Result, and OCR

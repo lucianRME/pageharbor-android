@@ -38,6 +38,7 @@ import org.synapseworks.pageharbor.document.pageExportStateAfterSuccess
 import org.synapseworks.pageharbor.document.preparePdfForSharing
 import org.synapseworks.pageharbor.document.startPageExport
 import org.synapseworks.pageharbor.document.searchablepdf.LocalSearchablePdfExportCoordinator
+import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfExportCoordinator
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfExportError
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfExportProgressListener
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfExportRequest
@@ -55,6 +56,7 @@ import org.synapseworks.pageharbor.ui.PageHarborApp
 import org.synapseworks.pageharbor.ui.PageHarborScreen
 import org.synapseworks.pageharbor.ocr.MlKitOcrEngine
 import org.synapseworks.pageharbor.ocr.OcrEngine
+import org.synapseworks.pageharbor.ocr.OcrOperationTracker
 import org.synapseworks.pageharbor.ocr.OcrPage
 import org.synapseworks.pageharbor.ocr.OcrUiError
 import org.synapseworks.pageharbor.ocr.OcrUiState
@@ -91,14 +93,20 @@ class MainActivity : ComponentActivity() {
     private var scannedPageUris: List<Uri>
         get() = session.scannedPageUris
         set(value) { session.scannedPageUris = value }
-    private val ocrEngine: OcrEngine = MlKitOcrEngine()
+    private var ocrEngine: OcrEngine = MlKitOcrEngine()
     private var ocrJob: Job? = null
-    private val searchablePdfExportCoordinator by lazy {
-        LocalSearchablePdfExportCoordinator(this, ocrEngine)
-    }
+    private val ocrOperationTracker = OcrOperationTracker()
+    private var searchablePdfExportCoordinatorForCurrentActivity: SearchablePdfExportCoordinator? = null
+    private val searchablePdfExportCoordinator: SearchablePdfExportCoordinator
+        get() = searchablePdfExportCoordinatorForCurrentActivity
+            ?: LocalSearchablePdfExportCoordinator(this, ocrEngine).also {
+                searchablePdfExportCoordinatorForCurrentActivity = it
+            }
     private var searchablePdfPreparedExport: SearchablePdfPreparedExport.Ready? = null
     private var searchablePdfExportJob: Job? = null
     private val searchablePdfOperationTracker = SearchablePdfOperationTracker()
+    private var searchablePdfDestinationLauncherOverride: ((String) -> Unit)? = null
+    private var ocrTerminalStateObserverForTest: (() -> Unit)? = null
 
     private val scanLauncher = registerForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult(),
@@ -281,6 +289,7 @@ class MainActivity : ComponentActivity() {
         }
 
         ocrUiState = OcrUiState.Recognizing
+        val operationId = ocrOperationTracker.begin()
         ocrJob = lifecycleScope.launch {
             val result = try {
                 withContext(Dispatchers.IO) {
@@ -289,15 +298,27 @@ class MainActivity : ComponentActivity() {
             } catch (_: kotlinx.coroutines.CancellationException) {
                 return@launch
             } catch (_: Exception) {
-                ocrUiState = OcrUiState.Error(OcrUiError.UNEXPECTED_FAILURE)
+                if (ocrOperationTracker.claimCompletion(operationId) ==
+                    OcrOperationTracker.CompletionClaim.CLAIMED
+                ) {
+                    ocrUiState = OcrUiState.Error(OcrUiError.UNEXPECTED_FAILURE)
+                    ocrTerminalStateObserverForTest?.invoke()
+                }
+                return@launch
+            }
+            if (ocrOperationTracker.claimCompletion(operationId) !=
+                OcrOperationTracker.CompletionClaim.CLAIMED
+            ) {
                 return@launch
             }
             ocrUiState = ocrStateAfterResult(result)
             ocrSelectedPageIndex = 0
+            ocrTerminalStateObserverForTest?.invoke()
         }
     }
 
     private fun clearRecognizedText() {
+        ocrOperationTracker.invalidate()
         ocrJob?.cancel()
         ocrJob = null
         ocrUiState = clearedOcrState()
@@ -359,9 +380,13 @@ class MainActivity : ComponentActivity() {
                     searchablePdfPreparedExport = preparedExport
                     searchablePdfSaveState = SearchablePdfSaveState.ChoosingDestination
                     try {
-                        createSearchablePdfDocumentLauncher.launch(
-                            preparedExport.filenameSuggestion.filename,
-                        )
+                        val filename = preparedExport.filenameSuggestion.filename
+                        val launcher = searchablePdfDestinationLauncherOverride
+                        if (launcher != null) {
+                            launcher(filename)
+                        } else {
+                            createSearchablePdfDocumentLauncher.launch(filename)
+                        }
                     } catch (_: ActivityNotFoundException) {
                         searchablePdfExportCoordinator.discardPreparedExport(preparedExport)
                         searchablePdfPreparedExport = null
@@ -621,13 +646,37 @@ class MainActivity : ComponentActivity() {
         screen: PageHarborScreen = PageHarborScreen.ScanResult,
         selectedOcrPageIndex: Int = 0,
         searchablePdfSaveState: SearchablePdfSaveState = SearchablePdfSaveState.Idle,
+        pageUris: List<Uri> = emptyList(),
     ) {
-        session.replaceScan(summary, scannedPdfUri = null, scannedPageUris = emptyList())
+        session.replaceScan(summary, scannedPdfUri = null, scannedPageUris = pageUris)
         session.ocrUiState = ocrResult?.let(OcrUiState::Success) ?: OcrUiState.Idle
         session.screen = screen
         session.ocrSelectedPageIndex = selectedOcrPageIndex
         session.searchablePdfSaveState = searchablePdfSaveState
     }
+
+    /**
+     * Instrumentation-only dependency seam. Production always retains the local ML Kit/PDFBox
+     * implementations and the Android SAF launcher; no runtime setting or manifest entry can use
+     * this seam. R8 removes these internal callers from production when they are unused.
+     */
+    internal fun replaceOperationsForTest(
+        ocrEngine: OcrEngine = this.ocrEngine,
+        searchablePdfExportCoordinator: SearchablePdfExportCoordinator =
+            this.searchablePdfExportCoordinator,
+        onSearchablePdfDestinationRequested: ((String) -> Unit)? =
+            searchablePdfDestinationLauncherOverride,
+        onOcrTerminalState: (() -> Unit)? = ocrTerminalStateObserverForTest,
+    ) {
+        this.ocrEngine = ocrEngine
+        searchablePdfExportCoordinatorForCurrentActivity = searchablePdfExportCoordinator
+        searchablePdfDestinationLauncherOverride = onSearchablePdfDestinationRequested
+        ocrTerminalStateObserverForTest = onOcrTerminalState
+    }
+
+    internal fun recognizeTextForTest() = recognizeText()
+
+    internal fun saveSearchablePdfForTest() = saveSearchablePdf()
 
     internal fun sessionScreenForTest(): PageHarborScreen = session.screen
 
@@ -636,6 +685,8 @@ class MainActivity : ComponentActivity() {
     internal fun selectedOcrPageForTest(): Int = session.ocrSelectedPageIndex
 
     internal fun searchablePdfStateForTest(): SearchablePdfSaveState = session.searchablePdfSaveState
+
+    internal fun ocrStateForTest(): OcrUiState = session.ocrUiState
 
     internal fun discardForTest() {
         clearRecognizedText()

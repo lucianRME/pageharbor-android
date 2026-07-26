@@ -24,6 +24,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   normal-PDF save, share-sheet cancellation, JPEG export, one- and three-page OCR, Copy Text,
   searchable-PDF save, state reset after Discard, and ordinary background/foreground retention.
   Active-operation process-loss and app-private cache inspection remain explicitly bounded gaps.
+- Added deterministic Android instrumentation gates for paused fake OCR and searchable-PDF
+  generation. They verify background/foreground completion, lifecycle/session invalidation, stale
+  completion rejection, temporary-output cleanup, and one destination request without changing
+  production operation timing or adding a runtime test toggle.
 
 ## [0.7.0-dev]
 

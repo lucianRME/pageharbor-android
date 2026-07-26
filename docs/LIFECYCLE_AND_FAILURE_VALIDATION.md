@@ -75,8 +75,11 @@ completed repeated real scanner sessions, normal/searchable PDF, share cancellat
 one/three-page OCR, Copy Text, rotation, and ordinary background/foreground checks on
 releaseVerification. A process kill while normal-PDF DocumentsUI was open reset safely to Home with
 no false success. Active OCR/searchable-PDF interruption remains unverified because the temporary
-fixtures completed too quickly to guarantee an in-progress interruption; that remains a beta task
-rather than a release claim. App-private inventory is not available through `run-as` on the
+fixtures completed too quickly to guarantee an in-progress physical interruption. Deterministic
+instrumentation now pauses fake OCR after start and fake PDF generation after private output setup:
+background/foreground completes once, Discard/recreation rejects stale completion, no duplicate
+destination request is emitted, and invalidated output is deleted. This does not claim a physical
+OCR/searchable-PDF process kill. App-private inventory is not available through `run-as` on the
 intentionally non-debuggable releaseVerification artifact.
 
 ### Tablet deterministic evidence

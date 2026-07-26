@@ -71,6 +71,8 @@ ML Kit data disclosure and Play Data safety guidance immediately before submissi
 - [ ] Keep active-operation interruption evidence separate from ordinary background/foreground
   evidence. Do not claim a process-kill or cache-inventory result when the local verification
   artifact is non-debuggable or the operation completed before the interruption could occur.
+- [ ] Treat the deterministic paused-operation suite as lifecycle and stale-callback evidence only;
+  it uses test APK fakes and is not present or configurable in the production release.
 
 ## Before any wider rollout
 

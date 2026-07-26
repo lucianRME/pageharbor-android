@@ -32,4 +32,14 @@ class PageHarborBuildInfoTest {
             assertEquals("unknown", BuildConfig.GIT_REVISION)
         }
     }
+
+    @Test
+    fun buildConfigHasNoRuntimeTestGateSwitch() {
+        assertFalse(
+            BuildConfig::class.java.declaredFields.any { field ->
+                field.name.contains("gate", ignoreCase = true) ||
+                    field.name.contains("testControl", ignoreCase = true)
+            },
+        )
+    }
 }

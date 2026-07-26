@@ -43,6 +43,11 @@ Status: partial `v0.8.0-dev` execution on 26 July 2026. This records only observ
   denied `run-as` access to its private cache/files directories, so no app-private inventory was
   taken and no security boundary was bypassed. Deterministic ownership/age cleanup tests remain the
   evidence for those directories.
+- The final three-page Session 5 sequence passed on releaseVerification: OCR visited all pages,
+  searchable-PDF SAF cancellation retained the Scan Result, retry saved successfully, the Android
+  Sharesheet showed one attachment and cancelled safely, Discard returned Home, and a fresh scanner
+  launch/cancel showed no stale document state. Copy Text remains covered by the earlier completed
+  Samsung session; this final sequence did not retain a separate feedback capture.
 
 The transient gallery fixtures, screenshots, external scanner UI hierarchy dumps, and device copies
 were removed immediately after this run.
@@ -60,9 +65,9 @@ were removed immediately after this run.
   ML Kit initialization, or PageHarbor crash was observed. Its headless camera surface did not
   settle sufficiently for deterministic coordinate/hierarchy automation, so this is not a claim
   that an emulator gallery import completed.
-- The full debug connected suite passed on both targets: API 31: 98 total, 98 completed,
-  0 failures, 0 errors, 0 skipped (158.237 s); API 36: 98 total, 98 completed, 0 failures,
-  0 errors, 0 skipped (136.422 s). This includes deterministic OCR-engine, searchable-PDF,
+- The full debug connected suite subsequently passed on both targets with the added interruption
+  tests: API 31: 103 total, 103 completed, 0 failures, 0 errors, 0 skipped; API 36: 103 total,
+  103 completed, 0 failures, 0 errors, 0 skipped. This includes deterministic OCR-engine, searchable-PDF,
   FileProvider share-intent, lifecycle/session-reset, and 200% font reachability coverage.
 - No PageHarbor defect was reproduced. The original API 36 failure was local emulator process
   handling; the API 31 image first landed under the command-line-tools SDK root rather than the
@@ -89,8 +94,8 @@ were removed immediately after this run.
   and 1200×1600 narrow windows. Default and 200% font plus light and dark theme retained the title,
   scan action, Privacy, About, and version identity without clipping or overlap. Background/foreground
   from Home remained coherent. This was not a broad tablet redesign and no product code changed.
-- The complete tablet-selected debug connected suite passed: 98 total, 98 completed, 0 failures,
-  0 errors, 0 skipped (86.509 s). It executed the Scan Result large-font and OCR Result 200% font
+- The complete tablet-selected debug connected suite subsequently passed: 103 total, 103 completed,
+  0 failures, 0 errors, 0 skipped. It executed the Scan Result large-font and OCR Result 200% font
   reachability tests plus deterministic OCR, searchable-PDF, FileProvider, multipage, lifecycle,
   session-reset, dialog, and live-feedback coverage.
 - No PageHarbor defect was reproduced. In this headless tablet environment, a visible and focusable
@@ -104,9 +109,14 @@ were removed immediately after this run.
 - Scanner launch/cancel, SAF cancellation, Scan Result/OCR Result rotation, and ordinary
   background/foreground have manual evidence. Process kill while the normal-PDF picker was open
   has manual evidence of the documented safe Home reset.
-- The temporary fixtures completed OCR and searchable-PDF preparation too quickly to guarantee a
-  kill or rotation while work was actively in progress. Those active-operation OCR/searchable-PDF
-  checks remain unverified; no completion behavior is inferred from the picker process-loss check.
+- A test-only controllable gate pauses fake OCR after it starts and fake PDF generation after the
+  private output is created but before completion. On Samsung, API 31, API 36, and the tablet,
+  deterministic instrumentation covered OCR/background completion, OCR discard/recreation stale
+  completion rejection, searchable-PDF/background completion with one destination request, and
+  searchable-PDF discard cleanup with no destination request.
+- Physical OCR/searchable-PDF process kill during active work remains unverified because real work
+  still completes too quickly. The normal-PDF-picker process-loss result remains the only physical
+  process-kill claim.
 - The external scanner, picker, and Samsung system UI were usable for the completed flows. Their
   short operation times, rather than picker availability, prevented a guaranteed in-progress
   OCR/searchable-PDF interruption.
@@ -128,5 +138,5 @@ were removed immediately after this run.
 
 No PageHarbor defect was found in the executed flow. The original API 36 emulator launch failure
 was recovered and is not evidence of API 36 incompatibility. The unexecuted physical lower-memory,
-tablet, lower-API, third-party-provider, active OCR/searchable-PDF interruption, and text-layer
-extraction checks remain beta gaps.
+tablet, lower-API, third-party-provider, physical active-operation process kill, app-private cache
+inventory, and text-layer extraction checks remain beta gaps.
