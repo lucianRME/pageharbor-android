@@ -5,7 +5,7 @@ not claim compatibility for devices that have not been tested.
 
 | Device / Android version | Form factor | Status | Coverage |
 | --- | --- | --- | --- |
-| Samsung SM-S938B / Android 16 | Phone | Partially validated | v0.8 update/clean install, releaseVerification Home, gallery-import scanner, Scan Result, cancelled JPEG SAF export |
+| Samsung SM-S938B / Android 16 | Phone | Manually validated, with explicit gaps | v0.8 update/clean install, repeated releaseVerification scanner sessions, normal/searchable PDF, share cancellation, JPEG export, one/three-page OCR, Copy Text, rotation, and ordinary background/foreground; active-operation OCR/searchable-PDF interruption and private-cache inventory remain unverified |
 | API 36 emulator | Pixel 7 phone emulator | Automated and partially manually validated | Recovered Android 16/API 36 Google Play ARM64 AVD; releaseVerification Home and ML Kit scanner entry; 98/98 debug connected tests |
 | Android 8–9 | Phone | Blocked | No installed/attached minimum-SDK target |
 | Android 10 | Phone | Planned | Manual smoke |

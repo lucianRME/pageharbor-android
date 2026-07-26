@@ -6,7 +6,7 @@ Status: partial `v0.8.0-dev` execution on 26 July 2026. This records only observ
 
 | Target | Configuration | Result |
 | --- | --- | --- |
-| Samsung SM-S938B | Android 16, 1080×2340, releaseVerification | Partial manual smoke passed |
+| Samsung SM-S938B | Android 16, 1080×2340, releaseVerification | Repeated-session manual smoke passed; active-operation interruption matrix remains partial |
 | API 36 emulator | Android 16/API 36 Google Play ARM64, releaseVerification | Recovered; Home and system-scanner entry passed; 98/98 debug connected tests passed |
 | API 31 emulator | Android 12/API 31 Google APIs ARM64, 2 GB RAM/two cores at runtime, releaseVerification | Established; Home passed; 98/98 debug connected tests passed |
 | Pixel Tablet emulator | Android 12/API 31 Google APIs ARM64, 2560×1600 at 320 dpi, releaseVerification | Stable; Home/dialogs/large-window manual checks and 98/98 debug connected tests passed; scanner-return flow limited by headless input |
@@ -23,6 +23,26 @@ Status: partial `v0.8.0-dev` execution on 26 July 2026. This records only observ
   returned a clean Scan Result with one page and all expected actions.
 - JPEG export opened the Android SAF destination picker with `Document-1.jpg`. Cancelling it
   returned to Scan Result with the distinct `Page export cancelled.` state and no crash.
+- Five consecutive real scanner sessions were run without clearing app data, uninstalling, or
+  restarting the device. They covered a normal-PDF save, sharesheet cancellation, three-page JPEG
+  export, three-page OCR navigation with page-2 rotation retention, searchable-PDF save, and a
+  final three-page OCR/Copy Text flow. Each completed Discard returned to a clean Home; the next
+  session showed no old preview, OCR text, selected page, success feedback, or stuck progress.
+- OCR completed on one and three non-sensitive temporary fixtures. The three-page result reported
+  text on all pages, changed with page navigation, preserved page 2 across portrait/landscape/
+  portrait, and Copy Text gave product feedback. No ML Kit or R8 failure occurred.
+- Normal PDF saved through DocumentsUI, sharing opened the Android sharesheet with one attachment,
+  JPEG export completed for all three pages, and searchable PDF saved successfully. A rendered
+  output visually opened; host tooling available in this run could not independently extract its
+  embedded text layer, so this run does not add a Unicode-extraction claim.
+- A fresh three-page Scan Result survived both a 15-second and a one-minute background/foreground
+  interval. A deliberate process kill while normal-PDF DocumentsUI was open relaunched safely to
+  Home without scan state or false-success feedback. No crash, provider, or security exception was
+  observed. This is expected non-persistent process-loss behavior.
+- The debug-signed releaseVerification package is intentionally non-debuggable. Android therefore
+  denied `run-as` access to its private cache/files directories, so no app-private inventory was
+  taken and no security boundary was bypassed. Deterministic ownership/age cleanup tests remain the
+  evidence for those directories.
 
 The transient gallery fixtures, screenshots, external scanner UI hierarchy dumps, and device copies
 were removed immediately after this run.
@@ -81,19 +101,26 @@ were removed immediately after this run.
 
 ## Interruption and recovery
 
-- Scanner launch/cancel and SAF cancellation have manual evidence; rotation/background/process-kill
-  during active OCR/searchable-PDF work were not completed in this run.
-- The external scanner, picker, and Samsung system UI were usable, but coordinate-only automation
-  was not reliable enough to claim OCR/searchable-PDF completion or five consecutive sessions.
+- Scanner launch/cancel, SAF cancellation, Scan Result/OCR Result rotation, and ordinary
+  background/foreground have manual evidence. Process kill while the normal-PDF picker was open
+  has manual evidence of the documented safe Home reset.
+- The temporary fixtures completed OCR and searchable-PDF preparation too quickly to guarantee a
+  kill or rotation while work was actively in progress. Those active-operation OCR/searchable-PDF
+  checks remain unverified; no completion behavior is inferred from the picker process-loss check.
+- The external scanner, picker, and Samsung system UI were usable for the completed flows. Their
+  short operation times, rather than picker availability, prevented a guaranteed in-progress
+  OCR/searchable-PDF interruption.
 - Existing deterministic lifecycle/coordinator coverage remains the evidence for stale callbacks,
   cancellation, destination failure, prepared-output cleanup, and process-reset defaults. It is not
   substituted for the missing manual matrix.
 
 ## Temporary-file inventory
 
-- Clean launch after installation: no app-private cache/files/database/shared-preferences files
-  observed.
-- The partial scanner and cancelled JPEG-export flow created no PageHarbor-owned persistent output.
+- App-private paths were not inspectable on the non-debuggable releaseVerification artifact; this
+  is an Android security boundary, not evidence that the directories are empty.
+- Temporary fixture/gallery files, user-selected validation PDFs/JPEGs, rendered PDF checks, UI
+  dumps, and diagnostics created for this run were removed after validation. SAF destinations were
+  deleted only when they were explicitly created by this run.
 - The ownership/age cleanup boundaries for stale `searchable-*.pdf` files and stale share copies are
   covered deterministically. A manual active searchable-PDF/process-kill inventory remains planned.
 
@@ -101,5 +128,5 @@ were removed immediately after this run.
 
 No PageHarbor defect was found in the executed flow. The original API 36 emulator launch failure
 was recovered and is not evidence of API 36 incompatibility. The unexecuted physical lower-memory,
-tablet, lower-API, five-session, multipage OCR, full emulator gallery-to-SAF/searchable-PDF/share,
-and active-operation interruption checks remain beta gaps.
+tablet, lower-API, third-party-provider, active OCR/searchable-PDF interruption, and text-layer
+extraction checks remain beta gaps.

@@ -68,6 +68,9 @@ ML Kit data disclosure and Play Data safety guidance immediately before submissi
   **planned** rather than claiming untested compatibility.
 - [ ] File failures with [BUG_REPORT_TEMPLATE.md](BUG_REPORT_TEMPLATE.md) and reject sensitive
   attachments, OCR text, full paths, and unredacted logs.
+- [ ] Keep active-operation interruption evidence separate from ordinary background/foreground
+  evidence. Do not claim a process-kill or cache-inventory result when the local verification
+  artifact is non-debuggable or the operation completed before the interruption could occur.
 
 ## Before any wider rollout
 

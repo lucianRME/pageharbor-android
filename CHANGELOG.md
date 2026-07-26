@@ -20,6 +20,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Established tablet emulator evidence on Android 12/API 31: releaseVerification Home, dialogs,
   200% font reachability, large-window resizing, and 98/98 connected tests; headless scanner
   gallery-return and active-operation manual flows remain explicit beta gaps.
+- Added observed Samsung Android 16 releaseVerification evidence for repeated real scanner sessions,
+  normal-PDF save, share-sheet cancellation, JPEG export, one- and three-page OCR, Copy Text,
+  searchable-PDF save, state reset after Discard, and ordinary background/foreground retention.
+  Active-operation process-loss and app-private cache inspection remain explicitly bounded gaps.
 
 ## [0.7.0-dev]
 

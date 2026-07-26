@@ -35,6 +35,14 @@ an item passed solely because a deterministic test covers a related boundary.
 4. Complete a second scan/OCR/export session. Confirm no prior preview, OCR text, filename category,
    progress, or success message appears.
 
+## Physical-device recovery supplement
+
+When using a debuggable development build and explicit owner approval, inspect only PageHarbor-owned
+private cache paths before and after the flow. Do not bypass Android's `run-as` boundary on a
+non-debuggable releaseVerification artifact; record that limitation instead. For active OCR or
+searchable-PDF interruption, use a fixture large enough for the operation to be visibly active;
+otherwise record the check as unverified rather than treating a quick completion as equivalent.
+
 ## Tablet and large-window supplement
 
 When a stable tablet or resizable target is available, repeat the Home, dialog, Scan Result, and OCR

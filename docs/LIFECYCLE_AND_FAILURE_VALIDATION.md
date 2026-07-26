@@ -70,10 +70,14 @@ Physical third-party provider behavior and a physical mid-copy provider failure 
 
 ## v0.8 beta matrix follow-up
 
-The partial Samsung execution is recorded in [BETA_MATRIX_RESULTS.md](BETA_MATRIX_RESULTS.md). It
-confirmed gallery-import scanner return and cancelled JPEG SAF behavior on releaseVerification. It
-did not complete active OCR/searchable-PDF interruption, five consecutive sessions, or process-kill
-manual coverage; those remain explicit beta tasks rather than release claims.
+The Samsung execution recorded in [BETA_MATRIX_RESULTS.md](BETA_MATRIX_RESULTS.md) subsequently
+completed repeated real scanner sessions, normal/searchable PDF, share cancellation, JPEG export,
+one/three-page OCR, Copy Text, rotation, and ordinary background/foreground checks on
+releaseVerification. A process kill while normal-PDF DocumentsUI was open reset safely to Home with
+no false success. Active OCR/searchable-PDF interruption remains unverified because the temporary
+fixtures completed too quickly to guarantee an in-progress interruption; that remains a beta task
+rather than a release claim. App-private inventory is not available through `run-as` on the
+intentionally non-debuggable releaseVerification artifact.
 
 ### Tablet deterministic evidence
 
