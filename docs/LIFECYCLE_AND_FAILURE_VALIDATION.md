@@ -74,3 +74,13 @@ The partial Samsung execution is recorded in [BETA_MATRIX_RESULTS.md](BETA_MATRI
 confirmed gallery-import scanner return and cancelled JPEG SAF behavior on releaseVerification. It
 did not complete active OCR/searchable-PDF interruption, five consecutive sessions, or process-kill
 manual coverage; those remain explicit beta tasks rather than release claims.
+
+### Tablet deterministic evidence
+
+On a stable Android 12/API 31 Pixel Tablet emulator, the complete 98-test connected suite passed.
+Its deterministic `ActivityScenario` lifecycle coverage continued to verify completed Scan Result
+and OCR Result recreation, active searchable-PDF reset, Discard cleanup, and replacement-session
+state boundaries at tablet density. The large-screen manual Home checks also survived reversible
+display-size changes and Home background/foreground without a crash. Headless scanner input did not
+complete a real tablet Scan Result or OCR Result, so active-operation rotation/background and
+selected-page persistence remain manual matrix gaps rather than inferred tablet claims.

@@ -35,6 +35,14 @@ an item passed solely because a deterministic test covers a related boundary.
 4. Complete a second scan/OCR/export session. Confirm no prior preview, OCR text, filename category,
    progress, or success message appears.
 
+## Tablet and large-window supplement
+
+When a stable tablet or resizable target is available, repeat the Home, dialog, Scan Result, and OCR
+Result checks in its native large size, a portrait-equivalent size, and 200% font. Confirm that all
+actions remain reachable by scrolling or semantics rather than device coordinates. Record whether
+scanner/gallery and SAF system UI are actually usable in the environment; headless-camera behavior
+must not be reported as a completed scanner-to-output flow.
+
 ## Report immediately
 
 Report an app close, missing picker, stale page/text, corrupt PDF, wrong filename, OCR failure,

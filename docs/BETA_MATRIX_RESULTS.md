@@ -9,7 +9,7 @@ Status: partial `v0.8.0-dev` execution on 26 July 2026. This records only observ
 | Samsung SM-S938B | Android 16, 1080×2340, releaseVerification | Partial manual smoke passed |
 | API 36 emulator | Android 16/API 36 Google Play ARM64, releaseVerification | Recovered; Home and system-scanner entry passed; 98/98 debug connected tests passed |
 | API 31 emulator | Android 12/API 31 Google APIs ARM64, 2 GB RAM/two cores at runtime, releaseVerification | Established; Home passed; 98/98 debug connected tests passed |
-| Tablet / large-screen | No installed or attached target | Blocked |
+| Pixel Tablet emulator | Android 12/API 31 Google APIs ARM64, 2560×1600 at 320 dpi, releaseVerification | Stable; Home/dialogs/large-window manual checks and 98/98 debug connected tests passed; scanner-return flow limited by headless input |
 | API 26/27 boundary | No installed or attached target | Blocked |
 
 ## Samsung results
@@ -47,6 +47,37 @@ were removed immediately after this run.
 - No PageHarbor defect was reproduced. The original API 36 failure was local emulator process
   handling; the API 31 image first landed under the command-line-tools SDK root rather than the
   emulator SDK root, then was installed into the configured SDK root and booted normally.
+
+## Tablet and large-screen increment
+
+- A dedicated Pixel Tablet Android 12/API 31 Google APIs ARM64 profile was created at 2560×1600,
+  320 dpi. The initial cold boot used 3 GB RAM, two cores, software graphics, disabled snapshots,
+  and no window: `emulator -avd PageHarbor_Tablet_API_31 -port 5558 -no-snapshot -wipe-data
+  -no-boot-anim -no-audio -no-window -gpu swiftshader_indirect -memory 3072 -cores 2`.
+  The later cold-restart check used the same command without `-wipe-data`. These are local AVD
+  instructions, not committed host paths or a release requirement.
+- The target reached ADB and `sys.boot_completed=1`, remained connected for 617 seconds before
+  app installation, accepted rotation settings, shut down cleanly through ADB, and cold-booted
+  back to ADB. The headless profile retained its natural landscape orientation; a reversible
+  1600×2560 display-size override provided portrait-equivalent layout evidence, not a claim of
+  physical-sensor portrait rotation.
+- The debug build installed first, then the minified debug-signed `releaseVerification` build.
+  Home showed `v0.8.0-dev (8) · releaseVerification`; About and Privacy opened and dismissed
+  with Back; package metadata remained `minSdk 26`, `targetSdk 36`, and contained no INTERNET
+  permission or PageHarbor runtime permission prompt.
+- Home was manually checked in native 2560×1600, 1600×2560 portrait-equivalent, 1600×1200 medium,
+  and 1200×1600 narrow windows. Default and 200% font plus light and dark theme retained the title,
+  scan action, Privacy, About, and version identity without clipping or overlap. Background/foreground
+  from Home remained coherent. This was not a broad tablet redesign and no product code changed.
+- The complete tablet-selected debug connected suite passed: 98 total, 98 completed, 0 failures,
+  0 errors, 0 skipped (86.509 s). It executed the Scan Result large-font and OCR Result 200% font
+  reachability tests plus deterministic OCR, searchable-PDF, FileProvider, multipage, lifecycle,
+  session-reset, dialog, and live-feedback coverage.
+- No PageHarbor defect was reproduced. In this headless tablet environment, a visible and focusable
+  scanner action did not dispatch from either coordinate or keyboard activation, so no gallery-import
+  return, manual Scan/OCR Result, SAF cancellation, multipage session, or active-operation
+  background/rotation result is claimed from the tablet. The deterministic state coverage is not a
+  substitute for those remaining manual beta checks.
 
 ## Interruption and recovery
 

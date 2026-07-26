@@ -15,8 +15,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added stale, app-owned searchable-PDF cache cleanup with deterministic ownership and age tests.
 - Added beta smoke, tester, defect-reporting, and device-compatibility documentation.
 - Recorded partial Samsung beta-matrix evidence for releaseVerification gallery import and cancelled
-  JPEG SAF export; unavailable emulator, tablet, lower-resource, and active-operation checks remain
-  documented gaps.
+  JPEG SAF export; active-operation, repeated-session, physical-device, and broader manual checks
+  remain documented gaps.
+- Established tablet emulator evidence on Android 12/API 31: releaseVerification Home, dialogs,
+  200% font reachability, large-window resizing, and 98/98 connected tests; headless scanner
+  gallery-return and active-operation manual flows remain explicit beta gaps.
 
 ## [0.7.0-dev]
 

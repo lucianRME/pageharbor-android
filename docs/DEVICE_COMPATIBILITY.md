@@ -15,7 +15,7 @@ not claim compatibility for devices that have not been tested.
 | Android 15 | Phone | Planned | Manual smoke |
 | Android 16 | Pixel | Planned | Manual smoke |
 | Lower-resource emulator | Pixel 7 phone emulator | Established | Android 12/API 31 Google APIs ARM64, cold booted with 2 GB RAM and two cores; not a physical low-memory-device claim |
-| Tablet / large-screen Android device | Tablet | Blocked | No installed/attached tablet or resizable target |
+| Android 12 | Pixel Tablet emulator | Automated and partially manually validated | API 31 Google APIs ARM64, 2560×1600/320 dpi; stable cold boot, releaseVerification Home/dialogs, 200% font and resize checks, 98/98 debug connected tests |
 
 Statuses: **automated** means deterministic suite coverage; **manually validated** means a recorded
 human smoke; **planned** has no compatibility claim; **unavailable** means no test device exists.
