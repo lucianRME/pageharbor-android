@@ -74,13 +74,13 @@ PDF metadata was intentionally excluded from `v0.5.0-dev`. Alternate SAF-provide
 
 This milestone does not add document storage, app-level navigation, permissions, metadata, document categories, cloud services, analytics, or process-death recovery.
 
-### `v0.7.0-dev` — Planned only
+### `v0.7.0-dev` — In progress
 
-- Reassess remaining environment-dependent validation: spoken TalkBack, third-party SAF providers, and external PDF viewers.
-- Perform low-end-device validation before considering performance or capacity changes.
-- Consider future privacy-preserving improvements only through separately scoped proposals.
+- Establish production release signing architecture with ignored local configuration and CI environment-variable support.
+- Enable release minification and resource shrinking, then verify a debug-signed release-equivalent installation.
+- Establish Android App Bundle generation and future Play-upload signing guidance without committing credentials or publishing an artifact.
 
-Limits carried forward: scanner acquisition remains capped at 10 pages; the 20-page regression covers post-scan searchable-PDF processing only. Process-death recovery is unsupported. No `v0.7.0-dev` work is complete.
+Limits carried forward: scanner acquisition remains capped at 10 pages; the 20-page regression covers post-scan searchable-PDF processing only. Process-death recovery is unsupported. No new end-user feature work is part of `v0.7.0-dev`.
 
 ## Planned MVP
 

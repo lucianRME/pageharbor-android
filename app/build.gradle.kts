@@ -1,8 +1,44 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
+
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.isFile) {
+        localPropertiesFile.inputStream().use(::load)
+    }
+}
+
+fun releaseSigningValue(environmentName: String, localPropertyName: String): String? =
+    providers.environmentVariable(environmentName).orNull?.takeIf { it.isNotBlank() }
+        ?: localProperties.getProperty(localPropertyName)?.takeIf { it.isNotBlank() }
+
+val releaseStoreFile = releaseSigningValue(
+    environmentName = "PAGEHARBOR_RELEASE_STORE_FILE",
+    localPropertyName = "pageharbor.release.storeFile",
+)
+val releaseStorePassword = releaseSigningValue(
+    environmentName = "PAGEHARBOR_RELEASE_STORE_PASSWORD",
+    localPropertyName = "pageharbor.release.storePassword",
+)
+val releaseKeyAlias = releaseSigningValue(
+    environmentName = "PAGEHARBOR_RELEASE_KEY_ALIAS",
+    localPropertyName = "pageharbor.release.keyAlias",
+)
+val releaseKeyPassword = releaseSigningValue(
+    environmentName = "PAGEHARBOR_RELEASE_KEY_PASSWORD",
+    localPropertyName = "pageharbor.release.keyPassword",
+)
+val releaseSigningConfigured = listOf(
+    releaseStoreFile,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword,
+).all { it != null }
 
 fun runGitCommand(vararg args: String): String? {
     if (!rootProject.layout.projectDirectory.file(".git").asFile.exists()) return null
@@ -31,11 +67,22 @@ android {
         applicationId = "org.synapseworks.pageharbor"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6
-        versionName = "0.6.0-dev"
+        versionCode = 7
+        versionName = "0.7.0-dev"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GIT_REVISION", "\"unknown\"")
+    }
+
+    signingConfigs {
+        create("playUpload") {
+            if (releaseSigningConfigured) {
+                storeFile = rootProject.file(requireNotNull(releaseStoreFile))
+                storePassword = requireNotNull(releaseStorePassword)
+                keyAlias = requireNotNull(releaseKeyAlias)
+                keyPassword = requireNotNull(releaseKeyPassword)
+            }
+        }
     }
 
     buildTypes {
@@ -44,11 +91,21 @@ android {
         }
 
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            if (releaseSigningConfigured) {
+                signingConfig = signingConfigs.getByName("playUpload")
+            }
+        }
+
+        create("releaseVerification") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
         }
     }
 
@@ -65,6 +122,39 @@ android {
         buildConfig = true
         compose = true
     }
+}
+
+tasks.register("verifyReleaseSigning") {
+    group = "distribution"
+    description = "Verifies that production Play upload signing credentials are configured."
+    doLast {
+        check(releaseSigningConfigured) {
+            "Production release signing requires PAGEHARBOR_RELEASE_STORE_FILE, " +
+                "PAGEHARBOR_RELEASE_STORE_PASSWORD, PAGEHARBOR_RELEASE_KEY_ALIAS, and " +
+                "PAGEHARBOR_RELEASE_KEY_PASSWORD, or their documented local.properties equivalents. " +
+                "Use bundleRelease or bundleReleaseVerification for unsigned/debug-signed local verification."
+        }
+    }
+}
+
+tasks.register("bundleReleaseForPlay") {
+    group = "distribution"
+    description = "Builds a production-upload-signed release bundle after credential verification."
+    dependsOn("verifyReleaseSigning", "bundleRelease")
+}
+
+tasks.register("assembleReleaseForPlay") {
+    group = "distribution"
+    description = "Builds a production-upload-signed release APK after credential verification."
+    dependsOn("verifyReleaseSigning", "assembleRelease")
+}
+
+tasks.matching { it.name == "bundleRelease" }.configureEach {
+    mustRunAfter("verifyReleaseSigning")
+}
+
+tasks.matching { it.name == "assembleRelease" }.configureEach {
+    mustRunAfter("verifyReleaseSigning")
 }
 
 dependencies {

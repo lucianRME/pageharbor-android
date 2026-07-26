@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Started `v0.7.0-dev` production release foundation work.
+- Prepared release builds for R8 minification and resource shrinking, with a separate debug-signed release-verification artifact for local smoke testing.
+- Added conditional Play upload-signing configuration using ignored local properties or environment variables; no keystore, alias, or password is stored in the repository.
+- Added documented Android App Bundle and future Play-upload signing workflow.
+- Synchronized the package version to `0.7.0-dev` (version code 7).
+
 ## [0.6.0-dev]
 
 ### Changed

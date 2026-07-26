@@ -70,3 +70,9 @@ Intended permission approach:
 - Camera permission should not be added if the selected system scanner does not require PageHarbor to request it directly.
 
 Any future permission must be justified by a user-initiated core feature and reviewed against a platform alternative.
+
+## Release Signing
+
+- Release upload signing credentials are developer- or CI-local configuration, never repository content.
+- Local release verification may use an unsigned bundle or a debug-signed release-equivalent artifact, but neither is a Play upload artifact.
+- Production signing may be enabled only from documented environment variables or ignored `local.properties` values.
