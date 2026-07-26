@@ -11,6 +11,9 @@ PageHarbor is intended to keep document handling local and user-controlled. This
 - PDF sharing uses the scanner URI directly when Android can grant it safely. Otherwise, PageHarbor creates a byte-for-byte copy in its private `shared-pdfs` cache and exposes only that file through a temporary-read FileProvider URI.
 - Failed share preparation deletes partial cache copies immediately. Completed share copies remain cache data, may be evicted by Android, and are removed by PageHarbor when they are at least 24 hours old on a later app start.
 - Exported files are written only to a destination chosen by the user.
+- A normal-PDF destination stream opened before a source failure is closed immediately; PageHarbor
+  never reports that failed export as saved. Unavailable or malformed SAF source/destination
+  boundaries are reduced to safe error categories without logging the URI or document details.
 - PageHarbor does not retain its own cloud copy.
 - Document contents must not be logged.
 

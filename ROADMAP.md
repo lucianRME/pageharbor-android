@@ -79,6 +79,10 @@ This milestone does not add document storage, app-level navigation, permissions,
 - Establish production release signing architecture with ignored local configuration and CI environment-variable support.
 - Enable release minification and resource shrinking, then verify a debug-signed release-equivalent installation.
 - Establish Android App Bundle generation and future Play-upload signing guidance without committing credentials or publishing an artifact.
+- Record a reproducible Samsung startup baseline and device-targeted App Bundle split analysis;
+  no Play download-size claim is made from this local analysis.
+- Harden SAF and private-cache failure handling so unavailable source/destination streams never
+  report success and prepared private output remains subject to cleanup.
 
 Limits carried forward: scanner acquisition remains capped at 10 pages; the 20-page regression covers post-scan searchable-PDF processing only. Process-death recovery is unsupported. No new end-user feature work is part of `v0.7.0-dev`.
 

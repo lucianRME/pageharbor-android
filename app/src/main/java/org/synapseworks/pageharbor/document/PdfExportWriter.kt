@@ -17,7 +17,10 @@ fun copyPdfToDestination(
     source: InputStream?,
     destination: OutputStream?,
 ): PdfExportResult {
-    if (source == null) return PdfExportResult.SourceMissing
+    if (source == null) {
+        destination?.closeSafely()
+        return PdfExportResult.SourceMissing
+    }
     if (destination == null) {
         source.closeSafely()
         return PdfExportResult.DestinationUnavailable
@@ -39,6 +42,14 @@ fun copyPdfToDestination(
 }
 
 private fun InputStream.closeSafely() {
+    try {
+        close()
+    } catch (_: IOException) {
+        // Nothing user-actionable, and paths or document details must not be logged.
+    }
+}
+
+private fun OutputStream.closeSafely() {
     try {
         close()
     } catch (_: IOException) {

@@ -542,6 +542,8 @@ class MainActivity : ComponentActivity() {
             null
         } catch (_: SecurityException) {
             return PdfExportResult.SourceMissing
+        } catch (_: IllegalArgumentException) {
+            return PdfExportResult.SourceMissing
         }
 
         val destination = try {
@@ -553,6 +555,9 @@ class MainActivity : ComponentActivity() {
             source.closeSafely()
             return PdfExportResult.DestinationUnavailable
         } catch (_: SecurityException) {
+            source.closeSafely()
+            return PdfExportResult.DestinationUnavailable
+        } catch (_: IllegalArgumentException) {
             source.closeSafely()
             return PdfExportResult.DestinationUnavailable
         }
@@ -566,8 +571,10 @@ class MainActivity : ComponentActivity() {
         } catch (_: FileNotFoundException) {
             null
         } catch (_: IOException) {
-            return PageExportResult.WriteFailed
+            return PageExportResult.SourceMissing
         } catch (_: SecurityException) {
+            return PageExportResult.SourceMissing
+        } catch (_: IllegalArgumentException) {
             return PageExportResult.SourceMissing
         }
 
@@ -580,6 +587,9 @@ class MainActivity : ComponentActivity() {
             source.closeSafely()
             return PageExportResult.DestinationUnavailable
         } catch (_: SecurityException) {
+            source.closeSafely()
+            return PageExportResult.DestinationUnavailable
+        } catch (_: IllegalArgumentException) {
             source.closeSafely()
             return PageExportResult.DestinationUnavailable
         }

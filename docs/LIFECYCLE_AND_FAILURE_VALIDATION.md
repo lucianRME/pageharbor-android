@@ -20,6 +20,15 @@ No active-operation recovery is attempted after process death or Activity recrea
 
 `LocalSearchablePdfExportCoordinatorTest` uses in-memory output streams at the SAF boundary. It verifies cleanup and safe error categories for a null output stream, provider-open exception, immediate write failure, mid-copy failure, flush failure, close failure, missing prepared output, and copy cancellation. In every tested failure path the private prepared PDF is deleted and the source scan remains untouched. A simulated private-cache deletion refusal is also non-crashing and never reports success; cleanup remains explicitly best-effort in that exceptional filesystem condition. Generator tests cover first- and later-page JPEG failures, generation cancellation, and partial-output cleanup. Repeated discard and cleanup of an already missing output are harmless.
 
+For `v0.7.0-dev`, the coordinator also injects private-cache creation and source-stream boundaries
+for deterministic tests. An unavailable cache returns `TEMPORARY_STORAGE_UNAVAILABLE` before
+generation; a null source stream returns the existing safe preparation failure and deletes the
+partial private output. Normal PDF copy tests cover short source reads and closing an already-open
+destination when the source is unavailable. `MainActivity` maps malformed or unavailable SAF
+source and destination URIs to existing safe source/destination categories rather than allowing a
+provider exception to escape. These are controlled boundary tests, not a claim that every external
+SAF provider or physical low-storage condition has been reproduced.
+
 `MainActivityLifecycleTest` uses `ActivityScenario` to recreate a deterministic completed Scan Result, completed OCR Result, and controlled active searchable-PDF state without arbitrary sleeps. It confirms that scan/OCR state remains available after recreation, active searchable-PDF state resets to retryable idle, Discard clears the retained session, and a replacement scan replaces the old state. `PageHarborSessionViewModelTest` covers the same stable-state boundary directly. Existing token and coordinator tests cover stale completion rejection and prepared-output cleanup beneath that boundary.
 
 ## Remaining validation

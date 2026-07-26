@@ -5,6 +5,7 @@ import android.net.Uri
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
+import java.io.InputStream
 import java.io.OutputStream
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.coroutines.coroutineContext
@@ -90,15 +91,21 @@ class LocalSearchablePdfExportCoordinator(
     private val generator: SearchablePdfGenerator = PdfBoxSearchablePdfGenerator(context),
     private val documentClassifier: DocumentClassifier = DocumentClassifier(),
     private val filenameSuggestionEngine: FilenameSuggestionEngine = FilenameSuggestionEngine(),
+    /** Kept injectable only for deterministic source-provider failure tests; production uses SAF. */
+    private val openSourceInputStream: (Uri) -> InputStream? = { uri ->
+        context.contentResolver.openInputStream(uri)
+    },
     /** Kept injectable only for deterministic provider-boundary tests; production uses SAF. */
     private val openDestinationOutputStream: (Uri) -> OutputStream? = { uri ->
         context.contentResolver.openOutputStream(uri)
     },
+    /** Kept injectable only for deterministic private-cache availability tests. */
+    private val createTemporaryPdfFile: () -> File? = {
+        createPrivateTemporaryPdf(context.cacheDir)
+    },
     /** Kept injectable only for deterministic private-cache cleanup tests. */
     private val deleteTemporaryFile: (File) -> Boolean = File::delete,
 ) : SearchablePdfExportCoordinator {
-    private val applicationContext: Context = context.applicationContext ?: context
-
     override suspend fun prepare(request: SearchablePdfExportRequest): SearchablePdfPreparedExport {
         if (request.pageUris.isEmpty()) {
             return SearchablePdfPreparedExport.Failure(SearchablePdfPreparationError.NO_PAGES)
@@ -125,7 +132,7 @@ class LocalSearchablePdfExportCoordinator(
                         pages = request.pageUris.mapIndexed { index, uri ->
                             SearchablePdfPage(
                                 openJpegStream = {
-                                    applicationContext.contentResolver.openInputStream(uri)
+                                    openSourceInputStream(uri)
                                         ?: throw FileNotFoundException()
                                 },
                                 ocrResult = orderedOcrPages[index],
@@ -243,7 +250,7 @@ class LocalSearchablePdfExportCoordinator(
                 ocrEngine.recognize(
                     request.pageUris.map { uri ->
                         OcrPage {
-                            applicationContext.contentResolver.openInputStream(uri)
+                            openSourceInputStream(uri)
                                 ?: throw FileNotFoundException()
                         }
                     },
@@ -263,15 +270,7 @@ class LocalSearchablePdfExportCoordinator(
             ?.takeIf { pages -> pages.indices.all { index -> pages[index].pageIndex == index } }
 
     private fun createTemporaryPdf(): File? {
-        val directory = File(applicationContext.cacheDir, TemporaryPdfDirectory)
-        return try {
-            if (!directory.exists() && !directory.mkdirs()) return null
-            File.createTempFile(TemporaryPdfPrefix, ".pdf", directory)
-        } catch (_: IOException) {
-            null
-        } catch (_: SecurityException) {
-            null
-        }
+        return createTemporaryPdfFile()
     }
 
     private fun reportProgress(
@@ -299,5 +298,17 @@ class LocalSearchablePdfExportCoordinator(
         const val TemporaryPdfDirectory = "searchable-pdfs"
         const val TemporaryPdfPrefix = "searchable-"
         const val CopyBufferSize = 8 * 1024
+
+        fun createPrivateTemporaryPdf(cacheDirectory: File): File? {
+            val directory = File(cacheDirectory, TemporaryPdfDirectory)
+            return try {
+                if (!directory.exists() && !directory.mkdirs()) return null
+                File.createTempFile(TemporaryPdfPrefix, ".pdf", directory)
+            } catch (_: IOException) {
+                null
+            } catch (_: SecurityException) {
+                null
+            }
+        }
     }
 }

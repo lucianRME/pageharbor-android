@@ -13,6 +13,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added conditional Play upload-signing configuration using ignored local properties or environment variables; no keystore, alias, or password is stored in the repository.
 - Added documented Android App Bundle and future Play-upload signing workflow.
 - Synchronized the package version to `0.7.0-dev` (version code 7).
+- Added a Samsung release-verification startup and App Bundle delivery-size baseline with no
+  startup telemetry or eager scanner, OCR, or PDF initialization.
+- Hardened normal-PDF and JPEG SAF source/destination boundary handling for unavailable or
+  malformed URIs, and close an already-open normal-PDF destination when its source is missing.
+- Added deterministic private-cache, source-provider, short-stream, write, flush, close,
+  cancellation, and cleanup coverage for export failure paths.
 
 ## [0.6.0-dev]
 

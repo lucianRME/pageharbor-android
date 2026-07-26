@@ -21,6 +21,14 @@ Scanner acquisition remains limited to the existing 10-page setting. The 20-page
 - Cancellation is checked before each OCR/generation/copy iteration. Prepared output is deleted after cancellation, failure, success, or explicit discard.
 - Physical 20- and 50-page scanner acquisition, OCR/export timings, memory observations, cancellation/lifecycle behavior, and low-storage/provider-failure measurements remain pending. Samsung NotificationShade retained input focus during the gallery-import attempt. No low-end-device claim or recommended increase beyond the existing 10-page scanner limit is made.
 
+## v0.7.0-dev delivery and failure follow-up
+
+The v0.7.0-dev release-verification work adds a device-targeted AAB split analysis and deterministic
+failure-boundary checks; the exact method and measurements are in
+[PERFORMANCE_AND_DELIVERY.md](PERFORMANCE_AND_DELIVERY.md). These checks do not simulate a full
+device filesystem or every third-party provider. In particular, they do not change the 10-page
+scanner cap, claim low-end-device behavior, or claim a Google Play download size.
+
 ## Stress classification
 
 The 20-page generator check is a normal connected regression test. Physical 20- and 50-page scanner validation is a future manual task on an environment where system UI does not retain focus; it is not silently included in the normal suite.

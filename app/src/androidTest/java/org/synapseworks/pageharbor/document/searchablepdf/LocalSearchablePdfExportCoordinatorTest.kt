@@ -188,6 +188,67 @@ class LocalSearchablePdfExportCoordinatorTest {
     }
 
     @Test
+    fun unavailablePrivateCacheReturnsSafePreparationFailureWithoutGenerating() = runBlocking {
+        val source = sharedFile("private-cache-source.jpg").apply { writeText("jpeg") }
+        val generator = RecordingGenerator()
+        val coordinator = LocalSearchablePdfExportCoordinator(
+            context = context,
+            ocrEngine = FailingOcrEngine,
+            generator = generator,
+            createTemporaryPdfFile = { null },
+        )
+
+        try {
+            assertEquals(
+                SearchablePdfPreparedExport.Failure(
+                    SearchablePdfPreparationError.TEMPORARY_STORAGE_UNAVAILABLE,
+                ),
+                coordinator.prepare(
+                    SearchablePdfExportRequest(
+                        pageUris = listOf(fileUri(source)),
+                        ocrResult = OcrResult(listOf(pageResult())),
+                    ),
+                ),
+            )
+            assertEquals(0, generator.requestCount)
+            assertTrue(source.exists())
+        } finally {
+            source.delete()
+        }
+    }
+
+    @Test
+    fun unavailableSourceStreamReturnsSafePreparationFailureAndCleansPartialOutput() = runBlocking {
+        val source = sharedFile("source-open-failure.jpg").apply { writeText("jpeg") }
+        val generator = SourceReadingGenerator()
+        val coordinator = LocalSearchablePdfExportCoordinator(
+            context = context,
+            ocrEngine = FailingOcrEngine,
+            generator = generator,
+            openSourceInputStream = { null },
+        )
+
+        try {
+            assertEquals(
+                SearchablePdfPreparedExport.Failure(
+                    SearchablePdfPreparationError.GENERATION_FAILED,
+                ),
+                coordinator.prepare(
+                    SearchablePdfExportRequest(
+                        pageUris = listOf(fileUri(source)),
+                        ocrResult = OcrResult(listOf(pageResult())),
+                    ),
+                ),
+            )
+            assertTrue(generator.outputFile != null)
+            assertFalse(generator.outputFile!!.exists())
+            assertTrue(source.exists())
+        } finally {
+            source.delete()
+        }
+    }
+
+    @Test
     fun deletesTemporaryPdfWhenGenerationIsCancelled() = runBlocking {
         val source = sharedFile("cancelled-source.jpg").apply { writeText("jpeg") }
         val generator = CancellingGenerator()
@@ -522,6 +583,17 @@ class LocalSearchablePdfExportCoordinatorTest {
             return SearchablePdfGenerationResult.Failure(
                 SearchablePdfGenerationError.GENERATION_FAILED,
             )
+        }
+    }
+
+    private class SourceReadingGenerator : SearchablePdfGenerator {
+        var outputFile: File? = null
+
+        override suspend fun generate(request: SearchablePdfRequest): SearchablePdfGenerationResult {
+            outputFile = request.outputFile
+            request.outputFile.writeText("partial")
+            request.pages.single().openJpegStream().use { input -> input.read() }
+            return SearchablePdfGenerationResult.Success(pageCount = 1, textLayerPageCount = 0)
         }
     }
 
