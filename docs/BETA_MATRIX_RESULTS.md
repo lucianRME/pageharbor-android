@@ -1,15 +1,16 @@
 # Beta Matrix Results
 
-Status: partial `v0.8.0-dev` execution on 26 July 2026. This records only observed behavior.
+Status: `v0.8.0-dev` closure evidence on 27 July 2026. This records only observed behavior and
+separates deterministic coverage from physical-device claims.
 
 ## Executed device matrix
 
 | Target | Configuration | Result |
 | --- | --- | --- |
-| Samsung SM-S938B | Android 16, 1080×2340, releaseVerification | Repeated-session manual smoke passed; active-operation interruption matrix remains partial |
-| API 36 emulator | Android 16/API 36 Google Play ARM64, releaseVerification | Recovered; Home and system-scanner entry passed; 98/98 debug connected tests passed |
-| API 31 emulator | Android 12/API 31 Google APIs ARM64, 2 GB RAM/two cores at runtime, releaseVerification | Established; Home passed; 98/98 debug connected tests passed |
-| Pixel Tablet emulator | Android 12/API 31 Google APIs ARM64, 2560×1600 at 320 dpi, releaseVerification | Stable; Home/dialogs/large-window manual checks and 98/98 debug connected tests passed; scanner-return flow limited by headless input |
+| Samsung SM-S938B | Android 16, 1080×2340, releaseVerification | Five-session manual smoke and 103/103 debug connected tests passed; physical active-work process kill remains unverified |
+| API 36 emulator | Android 16/API 36 Google Play ARM64, releaseVerification | Recovered; Home and system-scanner entry passed; 103/103 debug connected tests passed |
+| API 31 emulator | Android 12/API 31 Google APIs ARM64, 2 GB RAM/two cores at runtime, releaseVerification | Established; Home passed; 103/103 debug connected tests passed |
+| Pixel Tablet emulator | Android 12/API 31 Google APIs ARM64, 2560×1600 at 320 dpi, releaseVerification | Stable; Home/dialogs/large-window manual checks and 103/103 debug connected tests passed; scanner-return flow limited by headless input |
 | API 26/27 boundary | No installed or attached target | Blocked |
 
 ## Samsung results
@@ -140,3 +141,13 @@ No PageHarbor defect was found in the executed flow. The original API 36 emulato
 was recovered and is not evidence of API 36 incompatibility. The unexecuted physical lower-memory,
 tablet, lower-API, third-party-provider, physical active-operation process kill, app-private cache
 inventory, and text-layer extraction checks remain beta gaps.
+
+## Closure classification
+
+| Remaining limit | Classification | Closure rationale |
+| --- | --- | --- |
+| Physical kill during active OCR/searchable-PDF work | Non-blocking known limitation | Test-only gates deterministically cover invalidation, stale completion rejection, and cleanup; no physical active-work kill is claimed. |
+| App-private cache inventory on releaseVerification | Non-blocking known limitation | `run-as` denial on a non-debuggable verification build is expected; deterministic owned-file cleanup tests cover the boundary. |
+| Physical lower API/manufacturer coverage | Optional future coverage | API 31/API 36 automation and Samsung Android 16 are evidence, not a physical Android 8–11 or universal-OEM claim. |
+| Third-party SAF providers | Blocker before public release | DocumentsUI/local-provider flows passed; cloud, enterprise, and OEM providers remain untested. |
+| Latest Samsung searchable-PDF extraction | Non-blocking known limitation | Earlier v0.4 deterministic/Android/desktop validation covered Unicode extraction; the latest Samsung run was visual-only and does not repeat that claim. |

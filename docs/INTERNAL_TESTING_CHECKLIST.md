@@ -59,6 +59,9 @@ ML Kit data disclosure and Play Data safety guidance immediately before submissi
 
 ## v0.8 beta regression handoff
 
+Repository closure evidence is complete for `v0.8.0-dev`; this checklist remains owner-controlled
+preparation for a future internal-testing upload, not authorization to upload or publish.
+
 - [ ] Confirm the tester sees the expected version and version code in About PageHarbor.
 - [ ] For local verification only, confirm the build type is `releaseVerification`; this label and
   Git revision must not appear in a production release.

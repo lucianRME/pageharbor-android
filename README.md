@@ -4,7 +4,19 @@ PageHarbor is an open-source, privacy-first Android document scanner. The app is
 
 ## Current status
 
-The active development milestone is `v0.8.0-dev`, focused on controlled internal-beta readiness, local update-path validation, defect reproducibility, and device compatibility without changing the product feature set. PageHarbor supports local document scanning, PDF save and share, JPEG page export, explicit on-device Latin OCR with in-memory selectable text and Copy Text, searchable-PDF generation, and deterministic category-only filename suggestions for searchable-PDF saves. Searchable PDFs are rebuilt locally from scanned JPEG pages with an invisible OCR text layer, then saved through the Android system file picker. The user can edit the suggested name; the SAF provider remains authoritative for the final name and destination. The UI is organized into focused Home, Scan Result, and OCR Result surfaces. OCR Result presents the selected page's local preview and recognized text with multipage navigation, without creating a document library. The active in-memory session retains completed Scan Result and OCR Result state across rotation only. ML Kit's scanner provides crop, rotate, filters, and multi-page review.
+`v0.8.0-dev` is ready for its closure commit and annotated tag after owner review. It establishes
+controlled internal-beta readiness, local update-path validation, defect reproducibility, and device
+compatibility evidence without changing the product feature set. It is not a Google Play release or
+a claim of universal device/provider compatibility. PageHarbor supports local document scanning, PDF
+save and share, JPEG page export, explicit on-device Latin OCR with in-memory selectable text and
+Copy Text, searchable-PDF generation, and deterministic category-only filename suggestions for
+searchable-PDF saves. Searchable PDFs are rebuilt locally from scanned JPEG pages with an invisible
+OCR text layer, then saved through the Android system file picker. The user can edit the suggested
+name; the SAF provider remains authoritative for the final name and destination. The UI is organized
+into focused Home, Scan Result, and OCR Result surfaces. OCR Result presents the selected page's
+local preview and recognized text with multipage navigation, without creating a document library.
+The active in-memory session retains completed Scan Result and OCR Result state across rotation only.
+ML Kit's scanner provides crop, rotate, filters, and multi-page review.
 
 See [ROADMAP.md](ROADMAP.md) for the current project roadmap.
 

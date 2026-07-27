@@ -98,20 +98,33 @@ privacy-policy URL and contact, current Play Console declarations, store assets,
 the applicable Google terms. Those prerequisites are tracked in
 [`docs/INTERNAL_TESTING_CHECKLIST.md`](docs/INTERNAL_TESTING_CHECKLIST.md).
 
-### `v0.8.0-dev` — In progress
+### `v0.8.0-dev` — Complete
 
-- Establish controlled internal-beta readiness without publishing to Google Play.
-- Validate a local debug-signed update path from `v0.7.0-dev` to `v0.8.0-dev`, clean install, and
+- Established controlled internal-beta readiness without publishing to Google Play.
+- Validated a local debug-signed update path from `v0.7.0-dev` to `v0.8.0-dev`, clean install, and
   the documented no-downgrade expectation.
-- Make debug and local `releaseVerification` builds identifiable without exposing build details in
+- Made debug and local `releaseVerification` builds identifiable without exposing build details in
   a production release.
-- Add a concise beta smoke protocol, privacy-safe defect template, tester guide, and honest device
+- Added a concise beta smoke protocol, privacy-safe defect template, tester guide, and honest device
   compatibility matrix.
-- Validate interruption/reset behavior, repeated sessions, and app-owned temporary-cache cleanup.
+- Validated repeated Samsung sessions, local DocumentsUI flows, rotation, ordinary
+  background/foreground behavior, and app-owned temporary-cache cleanup boundaries.
+- Added deterministic paused-operation tests for OCR and searchable-PDF lifecycle invalidation,
+  stale/duplicate completion rejection, and prepared-output cleanup. These are test-only fakes;
+  they do not add production delays or process-death recovery.
 
 This milestone does not add a document library, accounts, cloud sync, PageHarbor analytics or crash
 SDKs, advertising, OCR language downloads, advanced image editing, new AI features, automatic
 document retention, new permissions, or Play publication.
+
+### `v0.9.0-dev` — Planned only
+
+- Collect real internal-tester feedback and triage reproducible defects.
+- Expand third-party SAF/provider compatibility and physical-device coverage.
+- Validate a Play-delivered update only after owner-controlled Play prerequisites are complete.
+- Address performance or accessibility defects discovered by testers.
+
+No `v0.9.0-dev` work is complete or implied by this roadmap entry.
 
 ## Planned MVP
 

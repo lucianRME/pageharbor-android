@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.8.0-dev]
+
 ### Changed
 
 - Started `v0.8.0-dev` internal-beta readiness, update-path validation, and defect-discovery work.
@@ -18,8 +20,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   JPEG SAF export; active-operation, repeated-session, physical-device, and broader manual checks
   remain documented gaps.
 - Established tablet emulator evidence on Android 12/API 31: releaseVerification Home, dialogs,
-  200% font reachability, large-window resizing, and 98/98 connected tests; headless scanner
-  gallery-return and active-operation manual flows remain explicit beta gaps.
+  200% font reachability, large-window resizing, and 103/103 connected tests; headless scanner
+  gallery-return remains an explicit physical/manual gap.
 - Added observed Samsung Android 16 releaseVerification evidence for repeated real scanner sessions,
   normal-PDF save, share-sheet cancellation, JPEG export, one- and three-page OCR, Copy Text,
   searchable-PDF save, state reset after Discard, and ordinary background/foreground retention.
@@ -28,6 +30,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   generation. They verify background/foreground completion, lifecycle/session invalidation, stale
   completion rejection, temporary-output cleanup, and one destination request without changing
   production operation timing or adding a runtime test toggle.
+- Completed the local Samsung Session 5 cancellation/retry/share-reset sequence and final
+  four-target 103/103 connected-suite evidence. Physical active-work process kill and private-cache
+  inspection remain documented non-blocking validation limits.
 
 ## [0.7.0-dev]
 

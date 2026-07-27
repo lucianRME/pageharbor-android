@@ -1,7 +1,7 @@
 # Performance and Delivery Validation
 
-Status: `v0.7.0-dev` baseline and release-verification validation; `v0.8.0-dev` retains the same
-releaseVerification approach for beta regression smoke.
+Status: `v0.7.0-dev` baseline and `v0.8.0-dev` closure inspection. The local
+releaseVerification approach remains for beta regression smoke.
 
 ## Scope and method
 
@@ -36,15 +36,20 @@ document-processing path was found.
 
 ## Artifact baseline and delivery analysis
 
-Pre-hardening exact local artifact bytes were:
+The final v0.8 closure inspection recorded these exact local artifact bytes:
 
 | Artifact | Bytes |
 | --- | ---: |
-| Debug APK | 64,976,837 |
-| Unsigned release APK | 50,376,779 |
-| Debug-signed releaseVerification APK | 50,389,067 |
-| Unsigned release AAB | 28,577,921 |
-| Debug-signed releaseVerification AAB | 28,610,581 |
+| Debug APK | 64,977,385 |
+| Unsigned release APK | 50,377,255 |
+| Debug-signed releaseVerification APK | 50,389,751 |
+| Unsigned release AAB | 28,579,553 |
+| Debug-signed releaseVerification AAB | 28,612,644 |
+
+The debug and release APKs plus the unsigned release AAB match the prior v0.8 hardening
+inspection exactly. The debug-signed releaseVerification AAB is 42 bytes larger than its prior
+recording; the interruption hardening adds no production dependency, resource, test fixture, or
+runtime gate, so this archive-level package variation is not a meaningful delivery-size change.
 
 Bundletool 1.18.1 built a temporary default APK set from the releaseVerification AAB for the
 connected Samsung device specification. Its reported total for that device was 12,893,237 bytes.

@@ -1,6 +1,6 @@
 # Lifecycle and Failure Validation
 
-Status: `v0.6.0-dev` lifecycle closure with `v0.8.0-dev` beta-readiness follow-up in progress.
+Status: `v0.6.0-dev` lifecycle closure with `v0.8.0-dev` beta-readiness follow-up complete.
 
 ## Ownership model
 
@@ -84,7 +84,7 @@ intentionally non-debuggable releaseVerification artifact.
 
 ### Tablet deterministic evidence
 
-On a stable Android 12/API 31 Pixel Tablet emulator, the complete 98-test connected suite passed.
+On a stable Android 12/API 31 Pixel Tablet emulator, the complete 103-test connected suite passed.
 Its deterministic `ActivityScenario` lifecycle coverage continued to verify completed Scan Result
 and OCR Result recreation, active searchable-PDF reset, Discard cleanup, and replacement-session
 state boundaries at tablet density. The large-screen manual Home checks also survived reversible
