@@ -4,10 +4,11 @@ PageHarbor is an open-source, privacy-first Android document scanner. The app is
 
 ## Current status
 
-`v0.8.0-dev` is ready for its closure commit and annotated tag after owner review. It establishes
-controlled internal-beta readiness, local update-path validation, defect reproducibility, and device
-compatibility evidence without changing the product feature set. It is not a Google Play release or
-a claim of universal device/provider compatibility. PageHarbor supports local document scanning, PDF
+`v0.8.0-dev` is complete and tagged. `0.9.0-beta01` is the current internal-testing preparation
+build; it is not yet available through Google Play and does not claim universal device/provider
+compatibility. The completed milestone established controlled internal-beta readiness, local
+update-path validation, defect reproducibility, and device compatibility evidence without changing
+the product feature set. PageHarbor supports local document scanning, PDF
 save and share, JPEG page export, explicit on-device Latin OCR with in-memory selectable text and
 Copy Text, searchable-PDF generation, and deterministic category-only filename suggestions for
 searchable-PDF saves. Searchable PDFs are rebuilt locally from scanned JPEG pages with an invisible

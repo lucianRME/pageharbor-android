@@ -67,8 +67,8 @@ android {
         applicationId = "org.synapseworks.pageharbor"
         minSdk = 26
         targetSdk = 36
-        versionCode = 8
-        versionName = "0.8.0-dev"
+        versionCode = 9
+        versionName = "0.9.0-beta01"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GIT_REVISION", "\"unknown\"")

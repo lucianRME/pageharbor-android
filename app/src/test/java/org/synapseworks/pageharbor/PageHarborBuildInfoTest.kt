@@ -12,8 +12,8 @@ class PageHarborBuildInfoTest {
 
     @Test
     fun versionMetadataMatchesConfiguredValue() {
-        assertEquals("0.8.0-dev", BuildConfig.VERSION_NAME)
-        assertEquals(8, BuildConfig.VERSION_CODE)
+        assertEquals("0.9.0-beta01", BuildConfig.VERSION_NAME)
+        assertEquals(9, BuildConfig.VERSION_CODE)
     }
 
     @Test

@@ -6,10 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.9.0-beta01] — Internal-testing preparation
+
+### Changed
+
+- Synchronized the package version to `0.9.0-beta01` (version code 9) for the owner-controlled
+  first Google Play Internal Testing upload preparation. This does not indicate Google Play
+  availability or completed internal testing.
+
 ## [0.8.0-dev]
 
 ### Changed
 
+- Completed and tagged `v0.8.0-dev`.
 - Started `v0.8.0-dev` internal-beta readiness, update-path validation, and defect-discovery work.
 - Synchronized the package version to `0.8.0-dev` (version code 8).
 - Added debug and local releaseVerification build identification while keeping production release
