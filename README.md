@@ -4,7 +4,7 @@ PageHarbor is an open-source, privacy-first Android document scanner. The app is
 
 ## Current status
 
-`v0.8.0-dev` is complete and tagged. `0.9.0-beta01` is the current internal-testing preparation
+`v0.8.0-dev` is complete and tagged. `1.0.0` is the current production-release preparation
 build; it is not yet available through Google Play and does not claim universal device/provider
 compatibility. The completed milestone established controlled internal-beta readiness, local
 update-path validation, defect reproducibility, and device compatibility evidence without changing

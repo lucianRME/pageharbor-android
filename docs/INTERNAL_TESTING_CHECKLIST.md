@@ -57,10 +57,10 @@ ML Kit data disclosure and Play Data safety guidance immediately before submissi
   OCR, searchable PDF, cancellation/retry, rotation, and uninstall/reinstall behavior.
 - [ ] Review crashes/ANRs and privacy feedback without collecting document data.
 
-## v0.9.0-beta01 internal-testing preparation
+## v1.0.0 production-release preparation
 
 Repository closure evidence is complete and tagged for `v0.8.0-dev`. This checklist supports the
-current `0.9.0-beta01` owner-controlled internal-testing preparation; it is not authorization to
+current `1.0.0` owner-controlled production-release preparation; it is not authorization to
 upload or publish, and does not indicate that internal testing has started.
 
 - [ ] Confirm the tester sees the expected version and version code in About PageHarbor.

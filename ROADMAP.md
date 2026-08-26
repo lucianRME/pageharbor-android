@@ -120,7 +120,7 @@ document retention, new permissions, or Play publication.
 `v0.8.0-dev` is complete and tagged. Its local validation evidence does not mean that Google Play
 internal testing has started or that the app is available on Google Play.
 
-### `v0.9.0-beta01` — Current internal-testing preparation
+### `v1.0.0` — Current production-release preparation
 
 - Prepare version metadata and the signed AAB for the owner-controlled first internal-testing upload.
 - Keep Play Console registration, Data safety declarations, policy hosting, upload, and tester

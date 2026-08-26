@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.0.0]
+
+### Changed
+
+- Synchronized the package version to `1.0.0` (version code 10).
+
 ## [0.9.0-beta01] — Internal-testing preparation
 
 ### Changed

@@ -3,7 +3,7 @@
 Effective date: 26 July 2026
 
 PageHarbor is an Android document scanner published by SynapseWorks. This policy describes the
-`org.synapseworks.pageharbor` application, version `0.9.0-beta01` and later versions that retain the
+`org.synapseworks.pageharbor` application, version `1.0.0` and later versions that retain the
 same practices. It is written for users and for a future Google Play listing.
 
 ## What PageHarbor does with documents
