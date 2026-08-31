@@ -10,6 +10,17 @@
     <string name="scan_complete">Scan complete</string>
     <string name="scan_page_ready">%1$d page ready</string>
     <string name="scan_pages_ready">%1$d pages ready</string>
+    <string name="scan_preview_section">Preview</string>
+    <string name="scan_preview_description">Scanned document preview, page %1$d of %2$d</string>
+    <string name="scan_preview_loading">Loading document preview…</string>
+    <string name="scan_preview_unavailable">Document preview is unavailable.</string>
+    <string name="filter_selector_heading">Filter</string>
+    <string name="filter_original">Original</string>
+    <string name="filter_enhance">Enhance</string>
+    <string name="filter_grayscale">Grayscale</string>
+    <string name="filter_black_and_white_short">B&amp;W</string>
+    <string name="filter_black_and_white">Black and white</string>
+    <string name="filter_high_contrast">High Contrast</string>
     <string name="scan_result_export_section">Save and share</string>
     <string name="scan_result_tools_section">More actions</string>
     <string name="scan_again_action">Scan again</string>

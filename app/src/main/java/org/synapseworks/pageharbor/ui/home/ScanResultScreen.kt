@@ -6,10 +6,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -17,8 +19,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
@@ -26,6 +35,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.synapseworks.pageharbor.R
+import org.synapseworks.pageharbor.ActiveScanPage
 import org.synapseworks.pageharbor.document.PageExportState
 import org.synapseworks.pageharbor.document.PdfSaveState
 import org.synapseworks.pageharbor.document.PdfShareState
@@ -35,6 +45,7 @@ import org.synapseworks.pageharbor.document.searchablepdf.isInProgress
 import org.synapseworks.pageharbor.ocr.OcrUiError
 import org.synapseworks.pageharbor.ocr.OcrUiState
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
+import org.synapseworks.pageharbor.image.DocumentFilter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +56,8 @@ fun ScanResultScreen(
     pageExportState: PageExportState,
     ocrUiState: OcrUiState,
     searchablePdfSaveState: SearchablePdfSaveState,
+    scanPages: List<ActiveScanPage>,
+    onPageFilterChange: (Long, DocumentFilter) -> Unit,
     onBack: () -> Unit,
     onSavePdf: () -> Unit,
     onSaveSearchablePdf: () -> Unit,
@@ -55,6 +68,15 @@ fun ScanResultScreen(
     onScanAgain: () -> Unit,
     onDiscard: () -> Unit,
 ) {
+    var selectedPageId by rememberSaveable { mutableStateOf<Long?>(null) }
+    LaunchedEffect(scanPages) {
+        if (scanPages.none { it.id == selectedPageId }) {
+            selectedPageId = scanPages.firstOrNull()?.id
+        }
+    }
+    val selectedPageIndex = scanPages.indexOfFirst { it.id == selectedPageId }
+        .takeIf { it >= 0 } ?: 0
+    val selectedPage = scanPages.getOrNull(selectedPageIndex)
     val saving = pdfSaveState == PdfSaveState.ChoosingDestination ||
         pdfSaveState == PdfSaveState.Saving
     val sharing = pdfShareState == PdfShareState.Preparing
@@ -98,6 +120,39 @@ fun ScanResultScreen(
                     result.jpegPageCount,
                 ),
             )
+
+            selectedPage?.let { page ->
+                Text(
+                    modifier = Modifier.padding(top = 12.dp),
+                    text = stringResource(R.string.scan_preview_section),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                if (page.sourceUri != null) {
+                    FilteredDocumentPreview(
+                        request = FilteredPreviewRequest(
+                            pageId = page.id,
+                            sourceKey = page.sourceUri.toString(),
+                            filter = page.filter,
+                        ),
+                        pageUri = page.sourceUri,
+                        pageNumber = selectedPageIndex + 1,
+                        pageCount = scanPages.size,
+                    )
+                } else {
+                    Text(stringResource(R.string.scan_preview_unavailable))
+                }
+                if (scanPages.size > 1) {
+                    PagePreviewNavigator(
+                        selectedPageIndex = selectedPageIndex,
+                        pageCount = scanPages.size,
+                        onSelectedPageChange = { index -> selectedPageId = scanPages[index].id },
+                    )
+                }
+                FilterSelector(
+                    selectedFilter = page.filter,
+                    onFilterSelected = { onPageFilterChange(page.id, it) },
+                )
+            }
 
             if (result.hasPdf || result.jpegPageCount > 0) {
                 Text(
@@ -267,6 +322,66 @@ fun ScanResultScreen(
                 onClick = onDiscard,
             ) {
                 Text(stringResource(R.string.home_clear_scan_result))
+            }
+        }
+    }
+}
+
+@Composable
+private fun PagePreviewNavigator(
+    selectedPageIndex: Int,
+    pageCount: Int,
+    onSelectedPageChange: (Int) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        OutlinedButton(
+            enabled = selectedPageIndex > 0,
+            onClick = { onSelectedPageChange(selectedPageIndex - 1) },
+        ) {
+            Text(stringResource(R.string.ocr_previous_page_action))
+        }
+        Text(
+            modifier = Modifier.padding(top = 12.dp),
+            text = stringResource(R.string.ocr_page_indicator, selectedPageIndex + 1, pageCount),
+        )
+        OutlinedButton(
+            enabled = selectedPageIndex < pageCount - 1,
+            onClick = { onSelectedPageChange(selectedPageIndex + 1) },
+        ) {
+            Text(stringResource(R.string.ocr_next_page_action))
+        }
+    }
+}
+
+@Composable
+private fun FilterSelector(
+    selectedFilter: DocumentFilter,
+    onFilterSelected: (DocumentFilter) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = stringResource(R.string.filter_selector_heading),
+            style = MaterialTheme.typography.titleSmall,
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            filterSelectorOptions.forEach { option ->
+                val accessibleLabel = stringResource(option.contentDescriptionRes)
+                FilterChip(
+                    selected = option.filter == selectedFilter,
+                    onClick = { onFilterSelected(option.filter) },
+                    label = { Text(stringResource(option.labelRes)) },
+                    modifier = Modifier.semantics {
+                        contentDescription = accessibleLabel
+                    },
+                )
             }
         }
     }

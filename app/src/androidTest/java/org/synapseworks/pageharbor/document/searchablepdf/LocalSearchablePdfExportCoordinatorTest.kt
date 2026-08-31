@@ -4,6 +4,7 @@ import android.content.Context
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.net.Uri
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,9 +30,49 @@ import org.synapseworks.pageharbor.ocr.OcrPageResult
 import org.synapseworks.pageharbor.ocr.OcrResult
 import org.synapseworks.pageharbor.ocr.OcrTextBounds
 import org.synapseworks.pageharbor.ocr.OcrTextLine
+import org.synapseworks.pageharbor.image.DocumentFilter
 
 class LocalSearchablePdfExportCoordinatorTest {
     private val context: Context = InstrumentationRegistry.getInstrumentation().targetContext
+
+    @Test
+    fun filteredVisualJpegDoesNotReplaceTheOriginalOcrSourceOrLayout() = runBlocking {
+        val source = sharedFile("filtered-visual-source.jpg")
+        writeJpeg(source)
+        val originalBytes = source.readBytes()
+        val ocrEngine = SourceRecordingOcrEngine(pageResult())
+        val generator = VisualRecordingGenerator()
+        val coordinator = LocalSearchablePdfExportCoordinator(
+            context = context,
+            ocrEngine = ocrEngine,
+            generator = generator,
+        )
+
+        try {
+            val prepared = coordinator.prepare(
+                SearchablePdfExportRequest(
+                    pageUris = listOf(fileUri(source)),
+                    visualPages = listOf(
+                        SearchablePdfVisualPage(
+                            pageId = 42L,
+                            originalUri = fileUri(source),
+                            filter = DocumentFilter.GRAYSCALE,
+                        ),
+                    ),
+                ),
+            )
+
+            assertTrue(prepared is SearchablePdfPreparedExport.Ready)
+            prepared as SearchablePdfPreparedExport.Ready
+            assertArrayEquals(originalBytes, ocrEngine.receivedSourceBytes)
+            assertEquals(pageResult().layout, generator.receivedOcrResult?.layout)
+            assertTrue(generator.visualPixelIsGrayscale)
+            assertArrayEquals(originalBytes, source.readBytes())
+            coordinator.discardPreparedExport(prepared)
+        } finally {
+            source.delete()
+        }
+    }
 
     @Test
     fun runsOcrGeneratesPdfWritesContentDestinationAndDeletesTemporaryFile() = runBlocking {
@@ -552,6 +593,39 @@ class LocalSearchablePdfExportCoordinatorTest {
         override fun recognize(pages: List<OcrPage>): OcrResult {
             requestCount++
             return OcrResult(listOf(result))
+        }
+    }
+
+    private class SourceRecordingOcrEngine(private val result: OcrPageResult) : OcrEngine {
+        var receivedSourceBytes: ByteArray = byteArrayOf()
+            private set
+
+        override fun recognize(pages: List<OcrPage>): OcrResult {
+            receivedSourceBytes = pages.single().openJpegStream().use { it.readBytes() }
+            return OcrResult(listOf(result))
+        }
+    }
+
+    private class VisualRecordingGenerator : SearchablePdfGenerator {
+        var receivedOcrResult: OcrPageResult? = null
+            private set
+        var visualPixelIsGrayscale: Boolean = false
+            private set
+
+        override suspend fun generate(request: SearchablePdfRequest): SearchablePdfGenerationResult {
+            val page = request.pages.single()
+            val bitmap = page.openJpegStream().use { input -> BitmapFactory.decodeStream(input) }
+            try {
+                val pixel = checkNotNull(bitmap).getPixel(120, 160)
+                visualPixelIsGrayscale =
+                    kotlin.math.abs(Color.red(pixel) - Color.green(pixel)) <= 1 &&
+                        kotlin.math.abs(Color.green(pixel) - Color.blue(pixel)) <= 1
+            } finally {
+                bitmap?.recycle()
+            }
+            receivedOcrResult = page.ocrResult
+            request.outputFile.writeText("prepared searchable pdf")
+            return SearchablePdfGenerationResult.Success(pageCount = 1, textLayerPageCount = 1)
         }
     }
 

@@ -4,6 +4,7 @@ import android.net.Uri
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfSaveState
+import org.synapseworks.pageharbor.image.DocumentFilter
 import org.synapseworks.pageharbor.ocr.OcrPageResult
 import org.synapseworks.pageharbor.ocr.OcrResult
 import org.synapseworks.pageharbor.ocr.OcrUiState
@@ -11,6 +12,66 @@ import org.synapseworks.pageharbor.scanner.ScannerSpikeState
 import org.synapseworks.pageharbor.ui.PageHarborScreen
 
 class PageHarborSessionViewModelTest {
+    @Test
+    fun newPagesDefaultToOriginalAndChangingOneDoesNotAffectAnother() {
+        val session = completedSession("first", "second")
+        val first = session.scanPages[0]
+        val second = session.scanPages[1]
+
+        assertEquals(DocumentFilter.ORIGINAL, first.filter)
+        assertEquals(DocumentFilter.ORIGINAL, second.filter)
+        assertEquals(true, session.setPageFilter(first.id, DocumentFilter.GRAYSCALE))
+        assertEquals(DocumentFilter.GRAYSCALE, session.scanPages[0].filter)
+        assertEquals(DocumentFilter.ORIGINAL, session.scanPages[1].filter)
+    }
+
+    @Test
+    fun reorderKeepsTheFilterWithItsStablePageIdentity() {
+        val session = completedSession("first", "second", "third")
+        val first = session.scanPages[0]
+        val second = session.scanPages[1]
+        val third = session.scanPages[2]
+        session.setPageFilter(second.id, DocumentFilter.BLACK_AND_WHITE)
+
+        assertEquals(true, session.reorderPages(listOf(third.id, second.id, first.id)))
+        assertEquals(listOf(third.id, second.id, first.id), session.scanPages.map(ActiveScanPage::id))
+        assertEquals(DocumentFilter.BLACK_AND_WHITE, session.scanPages[1].filter)
+    }
+
+    @Test
+    fun addedPagesDefaultToOriginalWithoutChangingExistingSelections() {
+        val session = completedSession("first")
+        val existing = session.scanPages.single()
+        session.setPageFilter(existing.id, DocumentFilter.HIGH_CONTRAST)
+        session.beginScannerRequest()
+        session.completeScannerRequest(scanSummary(pageCount = 1), null, pages("second"))
+
+        assertEquals(listOf(DocumentFilter.HIGH_CONTRAST, DocumentFilter.ORIGINAL),
+            session.scanPages.map(ActiveScanPage::filter))
+    }
+
+    @Test
+    fun revertingAndInvalidPageIdentifiersAreSafe() {
+        val session = completedSession("first")
+        val page = session.scanPages.single()
+        session.setPageFilter(page.id, DocumentFilter.AUTO_ENHANCE)
+
+        assertEquals(true, session.setPageFilter(page.id, DocumentFilter.ORIGINAL))
+        assertEquals(DocumentFilter.ORIGINAL, session.scanPages.single().filter)
+        assertEquals(false, session.setPageFilter(Long.MAX_VALUE, DocumentFilter.GRAYSCALE))
+        assertEquals(false, session.reorderPages(emptyList()))
+    }
+
+    @Test
+    fun recreationRetainsActivePageFilters() {
+        val session = completedSession("first")
+        val page = session.scanPages.single()
+        session.setPageFilter(page.id, DocumentFilter.BLACK_AND_WHITE)
+
+        session.resetTransientStateForRecreation()
+
+        assertEquals(DocumentFilter.BLACK_AND_WHITE, session.scanPages.single().filter)
+    }
     @Test
     fun returningFromOcrKeepsTheActiveScanAndItsOrderedPages() {
         val session = completedSession("first", "second")
@@ -241,5 +302,5 @@ class PageHarborSessionViewModelTest {
         }
 
     @Suppress("UNCHECKED_CAST")
-    private fun pages(vararg tokens: String): List<Uri> = tokens.toList() as List<Uri>
+    private fun pages(vararg tokens: String): List<Uri> = List(tokens.size) { null } as List<Uri>
 }

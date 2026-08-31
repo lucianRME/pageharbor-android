@@ -14,6 +14,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 import android.net.Uri
+import org.synapseworks.pageharbor.ActiveScanPage
 import org.synapseworks.pageharbor.BuildConfig
 import org.synapseworks.pageharbor.R
 import org.synapseworks.pageharbor.document.PageExportResult
@@ -25,6 +26,7 @@ import org.synapseworks.pageharbor.document.PdfShareState
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfSaveError
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfSaveState
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
+import org.synapseworks.pageharbor.image.DocumentFilter
 import org.synapseworks.pageharbor.ocr.OcrUiState
 import org.synapseworks.pageharbor.ui.home.HomeScreen
 import org.synapseworks.pageharbor.ui.home.OcrResultScreen
@@ -43,6 +45,8 @@ fun PageHarborApp(
     ocrUiState: OcrUiState = OcrUiState.Idle,
     ocrSelectedPageIndex: Int = 0,
     scannedPageUris: List<Uri> = emptyList(),
+    scanPages: List<ActiveScanPage> = emptyList(),
+    onPageFilterChange: (Long, DocumentFilter) -> Unit = { _, _ -> },
     onOcrSelectedPageChange: (Int) -> Unit = {},
     searchablePdfSaveState: SearchablePdfSaveState = SearchablePdfSaveState.Idle,
     onScanDocument: () -> Unit = {},
@@ -142,6 +146,8 @@ fun PageHarborApp(
             pageExportState = pageExportState,
             ocrUiState = ocrUiState,
             searchablePdfSaveState = searchablePdfSaveState,
+            scanPages = scanPages,
+            onPageFilterChange = onPageFilterChange,
             onBack = { navigateTo(PageHarborScreen.Home) },
             onSavePdf = onSavePdf,
             onSaveSearchablePdf = onSaveSearchablePdf,

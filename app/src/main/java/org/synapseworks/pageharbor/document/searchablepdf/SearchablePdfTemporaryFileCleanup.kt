@@ -4,6 +4,7 @@ import java.io.File
 
 private const val TemporaryPdfDirectory = "searchable-pdfs"
 private const val TemporaryPdfPrefix = "searchable-"
+private const val TemporaryVisualPrefix = "searchable-visual-"
 private const val TemporaryPdfMaxAgeMillis = 24L * 60L * 60L * 1000L
 
 /**
@@ -19,8 +20,10 @@ fun deleteStaleSearchablePdfs(
     directory.listFiles()?.forEach { file ->
         if (
             file.isFile &&
-            file.name.startsWith(TemporaryPdfPrefix) &&
-            file.name.endsWith(".pdf") &&
+            (
+                (file.name.startsWith(TemporaryPdfPrefix) && file.name.endsWith(".pdf")) ||
+                    (file.name.startsWith(TemporaryVisualPrefix) && file.name.endsWith(".jpg"))
+            ) &&
             nowMillis - file.lastModified() >= TemporaryPdfMaxAgeMillis
         ) {
             deleteSafely(file)

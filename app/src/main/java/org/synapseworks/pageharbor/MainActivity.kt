@@ -23,6 +23,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.synapseworks.pageharbor.document.PageExportResult
 import org.synapseworks.pageharbor.document.PageExportState
+import org.synapseworks.pageharbor.document.PageJpegExportPlan
+import org.synapseworks.pageharbor.document.NormalPdfExportPlan
+import org.synapseworks.pageharbor.document.NormalPdfRecompositionResult
 import org.synapseworks.pageharbor.document.PdfExportResult
 import org.synapseworks.pageharbor.document.PdfSaveState
 import org.synapseworks.pageharbor.document.PdfShareError
@@ -33,15 +36,22 @@ import org.synapseworks.pageharbor.document.copyPageToDestination
 import org.synapseworks.pageharbor.document.copyPdfToDestination
 import org.synapseworks.pageharbor.document.createPdfShareIntent
 import org.synapseworks.pageharbor.document.deleteStaleSharedPdfs
+import org.synapseworks.pageharbor.document.deleteNormalPdfRecomposition
+import org.synapseworks.pageharbor.document.deleteStaleNormalPdfs
+import org.synapseworks.pageharbor.document.normalPdfExportPlan
 import org.synapseworks.pageharbor.document.pageExportStateAfterCancellation
 import org.synapseworks.pageharbor.document.pageExportStateAfterSuccess
+import org.synapseworks.pageharbor.document.pageJpegExportPlan
 import org.synapseworks.pageharbor.document.preparePdfForSharing
+import org.synapseworks.pageharbor.document.recomposeNormalPdf
 import org.synapseworks.pageharbor.document.startPageExport
+import org.synapseworks.pageharbor.document.writeFilteredJpegToDestination
 import org.synapseworks.pageharbor.document.searchablepdf.LocalSearchablePdfExportCoordinator
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfExportCoordinator
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfExportError
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfExportProgressListener
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfExportRequest
+import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfVisualPage
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfExportResult
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfOperationTracker
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfPreparedExport
@@ -90,9 +100,8 @@ class MainActivity : ComponentActivity() {
     private var scannedPdfUri: Uri?
         get() = session.scannedPdfUri
         set(value) { session.scannedPdfUri = value }
-    private var scannedPageUris: List<Uri>
+    private val scannedPageUris: List<Uri>
         get() = session.scannedPageUris
-        set(value) { session.scannedPageUris = value }
     private var ocrEngine: OcrEngine = MlKitOcrEngine()
     private var ocrJob: Job? = null
     private val ocrOperationTracker = OcrOperationTracker()
@@ -212,6 +221,7 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             deleteStaleSharedPdfs(cacheDir)
             deleteStaleSearchablePdfs(cacheDir)
+            deleteStaleNormalPdfs(cacheDir)
         }
         setContent {
             PageHarborApp(
@@ -231,7 +241,9 @@ class MainActivity : ComponentActivity() {
                 ocrUiState = ocrUiState,
                 ocrSelectedPageIndex = ocrSelectedPageIndex,
                 scannedPageUris = scannedPageUris,
+                scanPages = session.scanPages,
                 onOcrSelectedPageChange = { ocrSelectedPageIndex = it },
+                onPageFilterChange = session::setPageFilter,
                 searchablePdfSaveState = searchablePdfSaveState,
                 onScanDocument = ::launchDocumentScanner,
                 onSavePdf = ::choosePdfDestination,
@@ -329,7 +341,8 @@ class MainActivity : ComponentActivity() {
             return
         }
 
-        if (scannedPdfUri == null) {
+        val plan = normalPdfExportPlan(scannedPdfUri, session.scanPages)
+        if (plan is NormalPdfExportPlan.DirectScannerPdf && plan.sourceUri == null) {
             pdfSaveState = PdfSaveState.Error(PdfExportResult.SourceMissing)
             return
         }
@@ -340,7 +353,8 @@ class MainActivity : ComponentActivity() {
 
     private fun saveSearchablePdf() {
         if (searchablePdfSaveState.isInProgress()) return
-        if (scannedPageUris.isEmpty()) {
+        val scanPages = session.scanPages
+        if (scanPages.isEmpty() || scanPages.any { it.sourceUri == null }) {
             searchablePdfSaveState = SearchablePdfSaveState.Error(SearchablePdfSaveError.NO_PAGES)
             return
         }
@@ -352,7 +366,14 @@ class MainActivity : ComponentActivity() {
         searchablePdfExportJob = lifecycleScope.launch {
             val preparedExport = searchablePdfExportCoordinator.prepare(
                 SearchablePdfExportRequest(
-                    pageUris = scannedPageUris,
+                    pageUris = scanPages.map { requireNotNull(it.sourceUri) },
+                    visualPages = scanPages.map { page ->
+                        SearchablePdfVisualPage(
+                            pageId = page.id,
+                            originalUri = requireNotNull(page.sourceUri),
+                            filter = page.filter,
+                        )
+                    },
                     ocrResult = existingOcrResult,
                     progressListener = SearchablePdfExportProgressListener { progress ->
                         runOnUiThread {
@@ -431,11 +452,11 @@ class MainActivity : ComponentActivity() {
     private fun sharePdf() {
         if (pdfShareState == PdfShareState.Preparing) return
 
-        val pdfUri = scannedPdfUri
+        val plan = normalPdfExportPlan(scannedPdfUri, session.scanPages)
         pdfShareState = PdfShareState.Preparing
         lifecycleScope.launch {
             val preparationResult = withContext(Dispatchers.IO) {
-                preparePdfForSharing(this@MainActivity, pdfUri)
+                prepareNormalPdfForSharing(plan)
             }
             when (preparationResult) {
                 is PdfSharePreparationResult.Ready -> launchPdfShare(preparationResult.uri)
@@ -489,7 +510,7 @@ class MainActivity : ComponentActivity() {
             return
         }
 
-        pageExportState = startPageExport(scannedPageUris.size)
+        pageExportState = startPageExport(session.scanPages.size)
         val initialState = pageExportState as? PageExportState.ChoosingDestination ?: return
         launchPageDestination(initialState)
     }
@@ -510,8 +531,8 @@ class MainActivity : ComponentActivity() {
         state: PageExportState.ChoosingDestination,
         destinationUri: Uri,
     ) {
-        val sourceUri = scannedPageUris.getOrNull(state.pageNumber - 1)
-        if (sourceUri == null) {
+        val page = session.scanPages.getOrNull(state.pageNumber - 1)
+        if (page?.sourceUri == null) {
             pageExportState = PageExportState.Error(PageExportResult.SourceMissing)
             return
         }
@@ -522,7 +543,7 @@ class MainActivity : ComponentActivity() {
         )
         lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) {
-                copyScannedPage(sourceUri, destinationUri)
+                exportScannedPage(page, destinationUri)
             }
             if (result != PageExportResult.Success) {
                 pageExportState = PageExportState.Error(result)
@@ -538,8 +559,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun savePdfToDestination(destinationUri: Uri) {
-        val sourceUri = scannedPdfUri
-        if (sourceUri == null) {
+        val plan = normalPdfExportPlan(scannedPdfUri, session.scanPages)
+        if (plan is NormalPdfExportPlan.DirectScannerPdf && plan.sourceUri == null) {
             pdfSaveState = PdfSaveState.Error(PdfExportResult.SourceMissing)
             return
         }
@@ -547,7 +568,7 @@ class MainActivity : ComponentActivity() {
         pdfSaveState = PdfSaveState.Saving
         lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) {
-                copyScannedPdf(sourceUri, destinationUri)
+                writeNormalPdfToDestination(plan, destinationUri)
             }
             pdfSaveState = when (result) {
                 PdfExportResult.Success -> PdfSaveState.Saved
@@ -556,6 +577,50 @@ class MainActivity : ComponentActivity() {
                 PdfExportResult.WriteFailed,
                 -> PdfSaveState.Error(result)
             }
+        }
+    }
+
+    private suspend fun writeNormalPdfToDestination(
+        plan: NormalPdfExportPlan,
+        destinationUri: Uri,
+    ): PdfExportResult = when (plan) {
+        is NormalPdfExportPlan.DirectScannerPdf -> {
+            val sourceUri = plan.sourceUri ?: return PdfExportResult.SourceMissing
+            copyScannedPdf(sourceUri, destinationUri)
+        }
+
+        is NormalPdfExportPlan.RecomposeFromPages -> when (
+            val recomposed = recomposeNormalPdf(this@MainActivity, plan.pages)
+        ) {
+            is NormalPdfRecompositionResult.Ready -> try {
+                copyRecomposedPdf(recomposed.file, destinationUri)
+            } finally {
+                deleteNormalPdfRecomposition(recomposed.file)
+            }
+
+            NormalPdfRecompositionResult.SourceMissing -> PdfExportResult.SourceMissing
+            NormalPdfRecompositionResult.Failed -> PdfExportResult.WriteFailed
+        }
+    }
+
+    private suspend fun prepareNormalPdfForSharing(
+        plan: NormalPdfExportPlan,
+    ): PdfSharePreparationResult = when (plan) {
+        is NormalPdfExportPlan.DirectScannerPdf -> {
+            preparePdfForSharing(this@MainActivity, plan.sourceUri)
+        }
+
+        is NormalPdfExportPlan.RecomposeFromPages -> when (
+            val recomposed = recomposeNormalPdf(this@MainActivity, plan.pages)
+        ) {
+            is NormalPdfRecompositionResult.Ready -> try {
+                preparePdfForSharing(this@MainActivity, Uri.fromFile(recomposed.file))
+            } finally {
+                deleteNormalPdfRecomposition(recomposed.file)
+            }
+
+            NormalPdfRecompositionResult.SourceMissing -> PdfSharePreparationResult.SourceMissing
+            NormalPdfRecompositionResult.Failed -> PdfSharePreparationResult.Failed
         }
     }
 
@@ -591,6 +656,34 @@ class MainActivity : ComponentActivity() {
         return copyPdfToDestination(source, destination)
     }
 
+    private fun copyRecomposedPdf(sourceFile: java.io.File, destinationUri: Uri): PdfExportResult {
+        val source = try {
+            sourceFile.inputStream()
+        } catch (_: FileNotFoundException) {
+            null
+        } catch (_: IOException) {
+            null
+        } catch (_: SecurityException) {
+            null
+        }
+        val destination = try {
+            contentResolver.openOutputStream(destinationUri)
+        } catch (_: FileNotFoundException) {
+            source.closeSafely()
+            return PdfExportResult.DestinationUnavailable
+        } catch (_: IOException) {
+            source.closeSafely()
+            return PdfExportResult.DestinationUnavailable
+        } catch (_: SecurityException) {
+            source.closeSafely()
+            return PdfExportResult.DestinationUnavailable
+        } catch (_: IllegalArgumentException) {
+            source.closeSafely()
+            return PdfExportResult.DestinationUnavailable
+        }
+        return copyPdfToDestination(source, destination)
+    }
+
     private fun copyScannedPage(sourceUri: Uri, destinationUri: Uri): PageExportResult {
         val source = try {
             contentResolver.openInputStream(sourceUri)
@@ -621,6 +714,57 @@ class MainActivity : ComponentActivity() {
         }
 
         return copyPageToDestination(source, destination)
+    }
+
+    private fun exportScannedPage(page: ActiveScanPage, destinationUri: Uri): PageExportResult =
+        when (val plan = pageJpegExportPlan(page)) {
+            is PageJpegExportPlan.DirectCopy -> {
+                copyScannedPage(requireNotNull(page.sourceUri), destinationUri)
+            }
+
+            is PageJpegExportPlan.Filtered -> {
+                writeFilteredScannedPage(
+                    sourceUri = requireNotNull(page.sourceUri),
+                    destinationUri = destinationUri,
+                    filter = plan.filter,
+                )
+            }
+        }
+
+    private fun writeFilteredScannedPage(
+        sourceUri: Uri,
+        destinationUri: Uri,
+        filter: org.synapseworks.pageharbor.image.DocumentFilter,
+    ): PageExportResult {
+        val destination = try {
+            contentResolver.openOutputStream(destinationUri)
+        } catch (_: FileNotFoundException) {
+            return PageExportResult.DestinationUnavailable
+        } catch (_: IOException) {
+            return PageExportResult.DestinationUnavailable
+        } catch (_: SecurityException) {
+            return PageExportResult.DestinationUnavailable
+        } catch (_: IllegalArgumentException) {
+            return PageExportResult.DestinationUnavailable
+        }
+
+        return writeFilteredJpegToDestination(
+            openSource = {
+                try {
+                    contentResolver.openInputStream(sourceUri)
+                } catch (_: FileNotFoundException) {
+                    null
+                } catch (_: IOException) {
+                    null
+                } catch (_: SecurityException) {
+                    null
+                } catch (_: IllegalArgumentException) {
+                    null
+                }
+            },
+            destination = destination,
+            filter = filter,
+        )
     }
 
     private fun InputStream?.closeSafely() {

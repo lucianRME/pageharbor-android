@@ -25,9 +25,11 @@ class SearchablePdfTemporaryFileCleanupTest {
     }
 
     @Test
-    fun removesOnlyStaleOwnedSearchablePdfFiles() {
+    fun removesOnlyStaleOwnedSearchablePdfAndVisualImageFiles() {
         val staleOwned = file("searchable-stale.pdf", ageMillis = 24L * 60L * 60L * 1000L)
+        val staleVisual = file("searchable-visual-stale.jpg", ageMillis = 24L * 60L * 60L * 1000L)
         val freshOwned = file("searchable-fresh.pdf", ageMillis = 1L)
+        val freshVisual = file("searchable-visual-fresh.jpg", ageMillis = 1L)
         val unrelatedPdf = file("other-document.pdf", ageMillis = 24L * 60L * 60L * 1000L)
         val nonPdf = file("searchable-note.txt", ageMillis = 24L * 60L * 60L * 1000L)
         val nestedDirectory = File(searchablePdfDirectory, "searchable-folder.pdf").apply { mkdirs() }
@@ -35,7 +37,9 @@ class SearchablePdfTemporaryFileCleanupTest {
         deleteStaleSearchablePdfs(cacheDirectory, nowMillis)
 
         assertFalse(staleOwned.exists())
+        assertFalse(staleVisual.exists())
         assertTrue(freshOwned.exists())
+        assertTrue(freshVisual.exists())
         assertTrue(unrelatedPdf.exists())
         assertTrue(nonPdf.exists())
         assertTrue(nestedDirectory.exists())

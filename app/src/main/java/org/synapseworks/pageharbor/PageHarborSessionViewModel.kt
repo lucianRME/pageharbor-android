@@ -9,6 +9,7 @@ import org.synapseworks.pageharbor.document.PageExportState
 import org.synapseworks.pageharbor.document.PdfSaveState
 import org.synapseworks.pageharbor.document.PdfShareState
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfSaveState
+import org.synapseworks.pageharbor.image.DocumentFilter
 import org.synapseworks.pageharbor.ocr.OcrUiState
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
 import org.synapseworks.pageharbor.scanner.createScannerResultSummary
@@ -20,6 +21,13 @@ internal enum class ScannerRequestMode {
     ADD_PAGES,
 }
 
+/** Stable, active-session-only identity and non-destructive filter choice for one source URI. */
+data class ActiveScanPage(
+    val id: Long,
+    val sourceUri: Uri?,
+    val filter: DocumentFilter = DocumentFilter.ORIGINAL,
+)
+
 /**
  * Retains only the current in-memory scan session while Android recreates MainActivity.
  * It deliberately has no saved-state handle: process-death recovery is unsupported.
@@ -28,7 +36,11 @@ class PageHarborSessionViewModel : ViewModel() {
     var screen: PageHarborScreen by mutableStateOf(PageHarborScreen.Home)
     var scannerState: ScannerSpikeState by mutableStateOf(ScannerSpikeState.Idle)
     var scannedPdfUri: Uri? by mutableStateOf(null)
-    var scannedPageUris: List<Uri> by mutableStateOf(emptyList())
+    var scanPages: List<ActiveScanPage> by mutableStateOf(emptyList())
+        private set
+    @Suppress("UNCHECKED_CAST")
+    val scannedPageUris: List<Uri>
+        get() = scanPages.map(ActiveScanPage::sourceUri) as List<Uri>
     var pdfSaveState: PdfSaveState by mutableStateOf(PdfSaveState.Idle)
     var pdfShareState: PdfShareState by mutableStateOf(PdfShareState.Idle)
     var pageExportState: PageExportState by mutableStateOf(PageExportState.Idle)
@@ -36,6 +48,7 @@ class PageHarborSessionViewModel : ViewModel() {
     var ocrSelectedPageIndex: Int by mutableStateOf(0)
     var searchablePdfSaveState: SearchablePdfSaveState by mutableStateOf(SearchablePdfSaveState.Idle)
     private var activeScannerRequest: ScannerRequestMode? = null
+    private var nextPageId = 0L
 
     /**
      * Starts one external scanner request without clearing a completed session pre-emptively.
@@ -122,7 +135,7 @@ class PageHarborSessionViewModel : ViewModel() {
         scannedPageUris: List<Uri>,
     ) {
         this.scannedPdfUri = scannedPdfUri
-        this.scannedPageUris = scannedPageUris
+        scanPages = newPages(scannedPageUris)
         this.scannerState = scannerState
         ocrUiState = OcrUiState.Idle
         ocrSelectedPageIndex = 0
@@ -135,7 +148,7 @@ class PageHarborSessionViewModel : ViewModel() {
         screen = PageHarborScreen.Home
         scannerState = ScannerSpikeState.Idle
         scannedPdfUri = null
-        scannedPageUris = emptyList()
+        scanPages = emptyList()
         ocrUiState = OcrUiState.Idle
         ocrSelectedPageIndex = 0
         resetTransientState()
@@ -174,7 +187,7 @@ class PageHarborSessionViewModel : ViewModel() {
             return
         }
 
-        scannedPageUris = scannedPageUris + addedPageUris
+        scanPages = scanPages + newPages(addedPageUris)
         scannerState = createScannerResultSummary(
             jpegPageCount = existingSummary.jpegPageCount + addedSummary.jpegPageCount,
             pdfPageCount = existingSummary.pdfPageCount,
@@ -183,5 +196,27 @@ class PageHarborSessionViewModel : ViewModel() {
         ocrSelectedPageIndex = 0
         resetTransientState()
         screen = PageHarborScreen.ScanResult
+    }
+
+    fun setPageFilter(pageId: Long, filter: DocumentFilter): Boolean {
+        val index = scanPages.indexOfFirst { it.id == pageId }
+        if (index < 0) return false
+        scanPages = scanPages.toMutableList().apply {
+            this[index] = this[index].copy(filter = filter)
+        }
+        return true
+    }
+
+    /** Keeps each filter with its stable page identity; invalid order requests are ignored safely. */
+    fun reorderPages(pageIds: List<Long>): Boolean {
+        if (pageIds.size != scanPages.size || pageIds.toSet().size != scanPages.size) return false
+        val pagesById = scanPages.associateBy(ActiveScanPage::id)
+        val reordered = pageIds.map { pagesById[it] ?: return false }
+        scanPages = reordered
+        return true
+    }
+
+    private fun newPages(uris: List<Uri?>): List<ActiveScanPage> = uris.map { uri ->
+        ActiveScanPage(id = nextPageId++, sourceUri = uri)
     }
 }

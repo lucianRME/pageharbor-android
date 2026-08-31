@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import java.io.File
 import java.io.FileNotFoundException
+import java.io.FilterInputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -12,7 +13,9 @@ import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import org.synapseworks.pageharbor.document.PageExportResult
 import org.synapseworks.pageharbor.document.classification.DocumentClassifier
+import org.synapseworks.pageharbor.document.writeFilteredJpegToDestination
 import org.synapseworks.pageharbor.document.filename.FilenameSuggestion
 import org.synapseworks.pageharbor.document.filename.FilenameSuggestionEngine
 import org.synapseworks.pageharbor.ocr.OcrEngine
@@ -35,9 +38,18 @@ interface SearchablePdfExportCoordinator {
 /** Ordered scanner JPEG sources, optional existing OCR, and UI-agnostic progress notifications. */
 data class SearchablePdfExportRequest(
     val pageUris: List<Uri>,
+    val visualPages: List<SearchablePdfVisualPage> = pageUris.mapIndexed { index, uri ->
+        SearchablePdfVisualPage(pageId = index.toLong(), originalUri = uri)
+    },
     val ocrResult: OcrResult? = null,
     val progressListener: SearchablePdfExportProgressListener = SearchablePdfExportProgressListener {},
-)
+) {
+    init {
+        require(visualPages.map(SearchablePdfVisualPage::originalUri) == pageUris) {
+            "Visual pages must retain the ordered original OCR sources."
+        }
+    }
+}
 
 fun interface SearchablePdfExportProgressListener {
     fun onProgress(progress: SearchablePdfExportProgress)
@@ -106,14 +118,16 @@ class LocalSearchablePdfExportCoordinator(
     /** Kept injectable only for deterministic private-cache cleanup tests. */
     private val deleteTemporaryFile: (File) -> Boolean = File::delete,
 ) : SearchablePdfExportCoordinator {
+    private val cacheDirectory: File = context.cacheDir
+
     override suspend fun prepare(request: SearchablePdfExportRequest): SearchablePdfPreparedExport {
-        if (request.pageUris.isEmpty()) {
+        if (request.visualPages.isEmpty()) {
             return SearchablePdfPreparedExport.Failure(SearchablePdfPreparationError.NO_PAGES)
         }
 
         val ocrResult = request.ocrResult ?: recognize(request)
             ?: return SearchablePdfPreparedExport.Failure(SearchablePdfPreparationError.OCR_FAILED)
-        val orderedOcrPages = orderOcrPages(ocrResult, request.pageUris.size)
+        val orderedOcrPages = orderOcrPages(ocrResult, request.visualPages.size)
             ?: return SearchablePdfPreparedExport.Failure(SearchablePdfPreparationError.OCR_RESULT_MISMATCH)
         val filenameSuggestion = filenameSuggestionEngine.suggest(
             documentClassifier.classify(ocrResult.plainText).category,
@@ -129,12 +143,9 @@ class LocalSearchablePdfExportCoordinator(
             when (
                 val generated = generator.generate(
                     SearchablePdfRequest(
-                        pages = request.pageUris.mapIndexed { index, uri ->
+                        pages = request.visualPages.mapIndexed { index, visualPage ->
                             SearchablePdfPage(
-                                openJpegStream = {
-                                    openSourceInputStream(uri)
-                                        ?: throw FileNotFoundException()
-                                },
+                                openJpegStream = { openVisualJpegStream(visualPage) },
                                 ocrResult = orderedOcrPages[index],
                             )
                         },
@@ -269,6 +280,51 @@ class LocalSearchablePdfExportCoordinator(
             ?.sortedBy { page -> page.pageIndex }
             ?.takeIf { pages -> pages.indices.all { index -> pages[index].pageIndex == index } }
 
+    /**
+     * The generator invokes this one page at a time. OCR never uses this stream: it always uses
+     * [SearchablePdfExportRequest.pageUris], the unfiltered original sources, in [recognize].
+     */
+    private fun openVisualJpegStream(page: SearchablePdfVisualPage): InputStream =
+        when (val plan = searchablePdfVisualPlan(page)) {
+            is SearchablePdfVisualPlan.Original -> {
+                openSourceInputStream(page.originalUri) ?: throw FileNotFoundException()
+            }
+
+            is SearchablePdfVisualPlan.Filtered -> openFilteredVisualJpegStream(page, plan.filter)
+        }
+
+    private fun openFilteredVisualJpegStream(
+        page: SearchablePdfVisualPage,
+        filter: org.synapseworks.pageharbor.image.DocumentFilter,
+    ): InputStream {
+        val temporaryImage = createTemporaryVisualJpeg()
+            ?: throw FileNotFoundException()
+        val destination = try {
+            temporaryImage.outputStream()
+        } catch (_: IOException) {
+            deleteTemporaryVisualJpeg(temporaryImage)
+            throw FileNotFoundException()
+        } catch (_: SecurityException) {
+            deleteTemporaryVisualJpeg(temporaryImage)
+            throw FileNotFoundException()
+        }
+        val result = writeFilteredJpegToDestination(
+            openSource = { openSourceInputStream(page.originalUri) },
+            destination = destination,
+            filter = filter,
+        )
+        if (result != PageExportResult.Success) {
+            deleteTemporaryVisualJpeg(temporaryImage)
+            throw FileNotFoundException()
+        }
+        return try {
+            DeleteOnCloseInputStream(temporaryImage.inputStream(), temporaryImage)
+        } catch (_: IOException) {
+            deleteTemporaryVisualJpeg(temporaryImage)
+            throw FileNotFoundException()
+        }
+    }
+
     private fun createTemporaryPdf(): File? {
         return createTemporaryPdfFile()
     }
@@ -294,9 +350,45 @@ class LocalSearchablePdfExportCoordinator(
         }
     }
 
+    private fun createTemporaryVisualJpeg(): File? {
+        val directory = File(cacheDirectory, TemporaryPdfDirectory)
+        return try {
+            if (!directory.exists() && !directory.mkdirs()) return null
+            File.createTempFile(TemporaryVisualPrefix, ".jpg", directory)
+        } catch (_: IOException) {
+            null
+        } catch (_: SecurityException) {
+            null
+        }
+    }
+
+    private fun deleteTemporaryVisualJpeg(file: File) {
+        if (file.isFile) {
+            try {
+                deleteTemporaryFile(file)
+            } catch (_: SecurityException) {
+                // Private-cache cleanup is best-effort and must not expose document details.
+            }
+        }
+    }
+
+    private inner class DeleteOnCloseInputStream(
+        input: InputStream,
+        private val temporaryImage: File,
+    ) : FilterInputStream(input) {
+        override fun close() {
+            try {
+                super.close()
+            } finally {
+                deleteTemporaryVisualJpeg(temporaryImage)
+            }
+        }
+    }
+
     private companion object {
         const val TemporaryPdfDirectory = "searchable-pdfs"
         const val TemporaryPdfPrefix = "searchable-"
+        const val TemporaryVisualPrefix = "searchable-visual-"
         const val CopyBufferSize = 8 * 1024
 
         fun createPrivateTemporaryPdf(cacheDirectory: File): File? {
