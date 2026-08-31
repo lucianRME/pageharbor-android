@@ -59,8 +59,8 @@ fun PageHarborTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
-        shapes = Shapes,
+        typography = PageHarborTypography,
+        shapes = PageHarborShapes,
         content = content,
     )
 }

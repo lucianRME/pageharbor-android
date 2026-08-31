@@ -74,11 +74,14 @@ fun PageHarborApp(
         val pdfSourceMissingMessage = stringResource(R.string.pdf_save_source_missing)
         val pdfDestinationUnavailableMessage = stringResource(R.string.pdf_save_destination_unavailable)
         val pdfWriteFailedMessage = stringResource(R.string.pdf_save_failed)
+        val pdfSavedMessage = stringResource(R.string.pdf_save_success)
         val searchablePdfNoPagesMessage = stringResource(R.string.searchable_pdf_error_no_pages)
         val searchablePdfPreparationFailedMessage = stringResource(R.string.searchable_pdf_error_preparation_failed)
         val searchablePdfDestinationUnavailableMessage =
             stringResource(R.string.searchable_pdf_error_destination_unavailable)
         val searchablePdfWriteFailedMessage = stringResource(R.string.searchable_pdf_error_write_failed)
+        val searchablePdfSavedMessage = stringResource(R.string.searchable_pdf_save_success)
+        val searchablePdfCancelledMessage = stringResource(R.string.searchable_pdf_cancelled)
         val pdfShareNoPdfMessage = stringResource(R.string.pdf_share_no_pdf)
         val pdfShareTargetUnavailableMessage = stringResource(R.string.pdf_share_target_unavailable)
         val pdfShareInvalidUriMessage = stringResource(R.string.pdf_share_invalid_uri)
@@ -87,6 +90,16 @@ fun PageHarborApp(
         val pageExportDestinationUnavailableMessage =
             stringResource(R.string.page_export_destination_unavailable)
         val pageExportFailedMessage = stringResource(R.string.page_export_failed)
+        val pageExportCompletedMessage = stringResource(R.string.page_export_success)
+        val pageExportCancelledMessage = stringResource(R.string.page_export_cancelled)
+        val ocrNoPagesMessage = stringResource(R.string.ocr_error_no_pages)
+        val ocrAllPagesFailedMessage = stringResource(R.string.ocr_error_all_pages_failed)
+        val ocrUnexpectedErrorMessage = stringResource(R.string.ocr_error_unexpected)
+
+        suspend fun showTransientFeedback(message: String) {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            snackbarHostState.showSnackbar(message)
+        }
 
         fun navigateTo(target: PageHarborScreen) {
             currentScreen = target
@@ -133,7 +146,7 @@ fun PageHarborApp(
                         )
                     }
                     if (copied) {
-                        coroutineScope.launch { snackbarHostState.showSnackbar(copiedMessage) }
+                        coroutineScope.launch { showTransientFeedback(copiedMessage) }
                     }
                 },
             )
@@ -141,6 +154,7 @@ fun PageHarborApp(
         currentScreen == PageHarborScreen.ScanResult &&
             scannerSpikeState is ScannerSpikeState.ResultSummary -> ScanResultScreen(
             result = scannerSpikeState,
+            snackbarHostState = snackbarHostState,
             pdfSaveState = pdfSaveState,
             pdfShareState = pdfShareState,
             pageExportState = pageExportState,
@@ -194,11 +208,11 @@ fun PageHarborApp(
                     if (autoNavigateToScanResult) navigateTo(PageHarborScreen.ScanResult)
                 }
                 ScannerSpikeState.Cancelled -> {
-                    snackbarHostState.showSnackbar(scanCancelledMessage)
+                    showTransientFeedback(scanCancelledMessage)
                 }
 
                 ScannerSpikeState.Error -> {
-                    snackbarHostState.showSnackbar(scannerErrorMessage)
+                    showTransientFeedback(scannerErrorMessage)
                 }
 
                 ScannerSpikeState.Idle,
@@ -216,15 +230,16 @@ fun PageHarborApp(
                     PdfExportResult.Success -> null
                 }
 
+                PdfSaveState.Saved -> pdfSavedMessage
+
                 PdfSaveState.Idle,
                 PdfSaveState.ChoosingDestination,
                 PdfSaveState.Saving,
-                PdfSaveState.Saved,
                 -> null
             }
 
             if (message != null) {
-                snackbarHostState.showSnackbar(message)
+                showTransientFeedback(message)
             }
         }
 
@@ -243,7 +258,7 @@ fun PageHarborApp(
             }
 
             if (message != null) {
-                snackbarHostState.showSnackbar(message)
+                showTransientFeedback(message)
             }
         }
 
@@ -256,19 +271,20 @@ fun PageHarborApp(
                     SearchablePdfSaveError.WRITE_FAILED -> searchablePdfWriteFailedMessage
                 }
 
+                SearchablePdfSaveState.Saved -> searchablePdfSavedMessage
+                SearchablePdfSaveState.Cancelled -> searchablePdfCancelledMessage
+
                 SearchablePdfSaveState.Idle,
                 SearchablePdfSaveState.Preparing,
                 SearchablePdfSaveState.Recognizing,
                 SearchablePdfSaveState.Generating,
                 SearchablePdfSaveState.ChoosingDestination,
                 SearchablePdfSaveState.Saving,
-                SearchablePdfSaveState.Saved,
-                SearchablePdfSaveState.Cancelled,
                 -> null
             }
 
             if (message != null) {
-                snackbarHostState.showSnackbar(message)
+                showTransientFeedback(message)
             }
         }
 
@@ -282,16 +298,41 @@ fun PageHarborApp(
                     PageExportResult.Success -> null
                 }
 
+                is PageExportState.Completed -> pageExportCompletedMessage
+                is PageExportState.Cancelled -> pageExportCancelledMessage
+
                 PageExportState.Idle,
                 is PageExportState.ChoosingDestination,
                 is PageExportState.Exporting,
-                is PageExportState.Completed,
-                is PageExportState.Cancelled,
                 -> null
             }
 
             if (message != null) {
-                snackbarHostState.showSnackbar(message)
+                showTransientFeedback(message)
+            }
+        }
+
+        LaunchedEffect(ocrUiState) {
+            val message = when (ocrUiState) {
+                is OcrUiState.Error -> when (ocrUiState.reason) {
+                    org.synapseworks.pageharbor.ocr.OcrUiError.NO_PAGES -> ocrNoPagesMessage
+                    org.synapseworks.pageharbor.ocr.OcrUiError.ALL_PAGES_FAILED -> {
+                        ocrAllPagesFailedMessage
+                    }
+
+                    org.synapseworks.pageharbor.ocr.OcrUiError.UNEXPECTED_FAILURE -> {
+                        ocrUnexpectedErrorMessage
+                    }
+                }
+
+                OcrUiState.Idle,
+                OcrUiState.Recognizing,
+                is OcrUiState.Success,
+                -> null
+            }
+
+            if (message != null) {
+                showTransientFeedback(message)
             }
         }
     }

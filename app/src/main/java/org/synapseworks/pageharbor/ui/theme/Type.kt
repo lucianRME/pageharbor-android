@@ -2,4 +2,5 @@ package org.synapseworks.pageharbor.ui.theme
 
 import androidx.compose.material3.Typography
 
-val Typography = Typography()
+/** Material typography roles are used directly by screens; PageHarbor does not need custom fonts. */
+val PageHarborTypography = Typography()

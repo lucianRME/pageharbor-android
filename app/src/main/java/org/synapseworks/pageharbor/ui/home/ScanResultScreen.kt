@@ -1,20 +1,26 @@
 package org.synapseworks.pageharbor.ui.home
 
-import androidx.annotation.StringRes
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -22,35 +28,35 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.foundation.layout.Row
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import org.synapseworks.pageharbor.R
 import org.synapseworks.pageharbor.ActiveScanPage
+import org.synapseworks.pageharbor.R
 import org.synapseworks.pageharbor.document.PageExportState
 import org.synapseworks.pageharbor.document.PdfSaveState
 import org.synapseworks.pageharbor.document.PdfShareState
-import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfSaveError
 import org.synapseworks.pageharbor.document.searchablepdf.SearchablePdfSaveState
 import org.synapseworks.pageharbor.document.searchablepdf.isInProgress
-import org.synapseworks.pageharbor.ocr.OcrUiError
+import org.synapseworks.pageharbor.image.DocumentFilter
 import org.synapseworks.pageharbor.ocr.OcrUiState
 import org.synapseworks.pageharbor.scanner.ScannerSpikeState
-import org.synapseworks.pageharbor.image.DocumentFilter
+import org.synapseworks.pageharbor.ui.theme.PageHarborLayout
+import org.synapseworks.pageharbor.ui.theme.PageHarborSpacing
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScanResultScreen(
     result: ScannerSpikeState.ResultSummary,
+    snackbarHostState: SnackbarHostState,
     pdfSaveState: PdfSaveState,
     pdfShareState: PdfShareState,
     pageExportState: PageExportState,
@@ -85,6 +91,7 @@ fun ScanResultScreen(
     val savingSearchablePdf = searchablePdfSaveState.isInProgress()
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -101,112 +108,171 @@ fun ScanResultScreen(
             )
         },
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(24.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(padding),
         ) {
-            Text(
-                modifier = Modifier.semantics { heading() },
-                text = stringResource(R.string.scan_complete),
-                style = MaterialTheme.typography.headlineMedium,
-            )
-            Text(
-                text = stringResource(
-                    if (result.jpegPageCount == 1) R.string.scan_page_ready else R.string.scan_pages_ready,
-                    result.jpegPageCount,
-                ),
-            )
-
-            selectedPage?.let { page ->
-                Text(
-                    modifier = Modifier.padding(top = 12.dp),
-                    text = stringResource(R.string.scan_preview_section),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                if (page.sourceUri != null) {
-                    FilteredDocumentPreview(
-                        request = FilteredPreviewRequest(
-                            pageId = page.id,
-                            sourceKey = page.sourceUri.toString(),
-                            filter = page.filter,
-                        ),
-                        pageUri = page.sourceUri,
-                        pageNumber = selectedPageIndex + 1,
-                        pageCount = scanPages.size,
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .widthIn(max = PageHarborLayout.expandedContentMaxWidth)
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = PageHarborLayout.compactScreenHorizontalPadding,
+                        vertical = PageHarborSpacing.large,
                     )
-                } else {
-                    Text(stringResource(R.string.scan_preview_unavailable))
-                }
-                if (scanPages.size > 1) {
-                    PagePreviewNavigator(
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(PageHarborSpacing.medium),
+            ) {
+                ScanContext(result.jpegPageCount)
+
+                selectedPage?.let { page ->
+                    PageEditingSection(
+                        page = page,
                         selectedPageIndex = selectedPageIndex,
                         pageCount = scanPages.size,
                         onSelectedPageChange = { index -> selectedPageId = scanPages[index].id },
+                        onPageFilterChange = onPageFilterChange,
+                        onAddPages = onScanAgain,
                     )
-                }
-                FilterSelector(
-                    selectedFilter = page.filter,
-                    onFilterSelected = { onPageFilterChange(page.id, it) },
+                } ?: PageToolbar(
+                    selectedPageIndex = null,
+                    pageCount = result.jpegPageCount,
+                    onSelectedPageChange = {},
+                    onAddPages = onScanAgain,
                 )
-            }
 
-            if (result.hasPdf || result.jpegPageCount > 0) {
-                Text(
-                    modifier = Modifier.padding(top = 12.dp),
-                    text = stringResource(R.string.scan_result_export_section),
-                    style = MaterialTheme.typography.titleMedium,
+                DocumentActionLayer(
+                    hasPdf = result.hasPdf,
+                    hasPages = result.jpegPageCount > 0,
+                    saving = saving,
+                    savingSearchablePdf = savingSearchablePdf,
+                    sharing = sharing,
+                    exporting = exporting,
+                    ocrUiState = ocrUiState,
+                    onSavePdf = onSavePdf,
+                    onSaveSearchablePdf = onSaveSearchablePdf,
+                    onSharePdf = onSharePdf,
+                    onExportPages = onExportPages,
+                    onRecognizeText = onRecognizeText,
+                    onViewRecognizedText = onViewRecognizedText,
                 )
-            }
-            if (result.hasPdf) {
-                Button(
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !saving,
-                    onClick = onSavePdf,
-                ) {
-                    Text(stringResource(R.string.pdf_save_action))
-                }
-            }
-            if (result.jpegPageCount > 0) {
-                OutlinedButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !savingSearchablePdf,
-                    onClick = onSaveSearchablePdf,
-                ) {
-                    Text(stringResource(R.string.searchable_pdf_save_action))
-                }
-            }
-            if (result.hasPdf) {
-                OutlinedButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !sharing,
-                    onClick = onSharePdf,
-                ) {
-                    Text(stringResource(R.string.pdf_share_action))
-                }
-            }
-            if (result.jpegPageCount > 0) {
-                Text(
-                    modifier = Modifier.padding(top = 12.dp),
-                    text = stringResource(R.string.scan_result_tools_section),
-                    style = MaterialTheme.typography.titleMedium,
+
+                OperationStatus(
+                    pdfSaveState = pdfSaveState,
+                    searchablePdfSaveState = searchablePdfSaveState,
+                    sharing = sharing,
+                    pageExportState = pageExportState,
+                    ocrUiState = ocrUiState,
                 )
-            }
-            if (result.jpegPageCount > 0) {
-                OutlinedButton(
+
+                TextButton(
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !exporting,
-                    onClick = onExportPages,
+                    onClick = onDiscard,
                 ) {
-                    Text(stringResource(R.string.page_export_action))
+                    Text(stringResource(R.string.home_clear_scan_result))
                 }
             }
-            if (result.jpegPageCount > 0) {
-                OutlinedButton(
-                    modifier = Modifier.fillMaxWidth(),
+        }
+    }
+}
+
+@Composable
+private fun ScanContext(pageCount: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            modifier = Modifier.semantics { heading() },
+            text = stringResource(R.string.scan_complete),
+            style = MaterialTheme.typography.titleMedium,
+        )
+        Text(
+            text = stringResource(
+                if (pageCount == 1) R.string.scan_page_ready else R.string.scan_pages_ready,
+                pageCount,
+            ),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun PageEditingSection(
+    page: ActiveScanPage,
+    selectedPageIndex: Int,
+    pageCount: Int,
+    onSelectedPageChange: (Int) -> Unit,
+    onPageFilterChange: (Long, DocumentFilter) -> Unit,
+    onAddPages: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(PageHarborSpacing.medium)) {
+        if (page.sourceUri != null) {
+            FilteredDocumentPreview(
+                request = FilteredPreviewRequest(
+                    pageId = page.id,
+                    sourceKey = page.sourceUri.toString(),
+                    filter = page.filter,
+                ),
+                pageUri = page.sourceUri,
+                pageNumber = selectedPageIndex + 1,
+                pageCount = pageCount,
+                minHeight = PageHarborLayout.editorDocumentPreviewMinHeight,
+                maxHeight = PageHarborLayout.editorDocumentPreviewMaxHeight,
+            )
+        } else {
+            Text(stringResource(R.string.scan_preview_unavailable))
+        }
+        PageToolbar(
+            selectedPageIndex = selectedPageIndex,
+            pageCount = pageCount,
+            onSelectedPageChange = onSelectedPageChange,
+            onAddPages = onAddPages,
+        )
+        FilterSelector(
+            selectedFilter = page.filter,
+            onFilterSelected = { onPageFilterChange(page.id, it) },
+        )
+    }
+}
+
+@Composable
+private fun DocumentActionLayer(
+    hasPdf: Boolean,
+    hasPages: Boolean,
+    saving: Boolean,
+    savingSearchablePdf: Boolean,
+    sharing: Boolean,
+    exporting: Boolean,
+    onSavePdf: () -> Unit,
+    onSaveSearchablePdf: () -> Unit,
+    onSharePdf: () -> Unit,
+    onExportPages: () -> Unit,
+    ocrUiState: OcrUiState,
+    onRecognizeText: () -> Unit,
+    onViewRecognizedText: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(PageHarborSpacing.small)) {
+        if (hasPdf) {
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !saving,
+                onClick = onSavePdf,
+            ) {
+                Text(stringResource(R.string.pdf_save_action))
+            }
+        }
+        if (hasPages) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(PageHarborSpacing.small),
+            ) {
+                FilledTonalButton(
+                    modifier = Modifier.weight(1f),
                     enabled = ocrUiState != OcrUiState.Recognizing,
                     onClick = onRecognizeText,
                 ) {
@@ -220,138 +286,170 @@ fun ScanResultScreen(
                         ),
                     )
                 }
-            }
-            if (ocrUiState is OcrUiState.Success) {
                 TextButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = onViewRecognizedText,
+                    modifier = Modifier.weight(1f),
+                    enabled = !savingSearchablePdf,
+                    onClick = onSaveSearchablePdf,
                 ) {
-                    Text(stringResource(R.string.ocr_view_action))
+                    Text(stringResource(R.string.searchable_pdf_save_action))
                 }
             }
-
-            if (saving) {
-                StatusMessage(R.string.pdf_save_progress)
-            }
-            if (pdfSaveState == PdfSaveState.Saved) {
-                StatusMessage(R.string.pdf_save_success)
-            }
-            when (searchablePdfSaveState) {
-                SearchablePdfSaveState.Preparing,
-                SearchablePdfSaveState.ChoosingDestination,
-                -> StatusMessage(R.string.searchable_pdf_preparing_progress)
-
-                SearchablePdfSaveState.Recognizing -> {
-                    StatusMessage(R.string.searchable_pdf_recognizing_progress)
-                }
-
-                SearchablePdfSaveState.Generating -> {
-                    StatusMessage(R.string.searchable_pdf_generating_progress)
-                }
-
-                SearchablePdfSaveState.Saving -> StatusMessage(R.string.searchable_pdf_saving_progress)
-                SearchablePdfSaveState.Saved -> StatusMessage(R.string.searchable_pdf_save_success)
-                SearchablePdfSaveState.Cancelled -> StatusMessage(R.string.searchable_pdf_cancelled)
-                SearchablePdfSaveState.Idle -> Unit
-                is SearchablePdfSaveState.Error -> StatusMessage(
-                    message = stringResource(
-                        when (searchablePdfSaveState.reason) {
-                            SearchablePdfSaveError.NO_PAGES -> R.string.searchable_pdf_error_no_pages
-                            SearchablePdfSaveError.PREPARATION_FAILED -> {
-                                R.string.searchable_pdf_error_preparation_failed
-                            }
-
-                            SearchablePdfSaveError.DESTINATION_UNAVAILABLE -> {
-                                R.string.searchable_pdf_error_destination_unavailable
-                            }
-
-                            SearchablePdfSaveError.WRITE_FAILED -> R.string.searchable_pdf_error_write_failed
-                        },
-                    ),
-                    isError = true,
-                )
-            }
-            if (sharing) {
-                StatusMessage(R.string.pdf_share_progress)
-            }
-            when (pageExportState) {
-                is PageExportState.Cancelled -> StatusMessage(R.string.page_export_cancelled)
-                is PageExportState.Completed -> StatusMessage(R.string.page_export_success)
-                is PageExportState.ChoosingDestination -> StatusMessage(
-                    R.string.page_export_progress,
-                    pageExportState.pageNumber,
-                    pageExportState.pageCount,
-                )
-
-                is PageExportState.Exporting -> StatusMessage(
-                    R.string.page_export_progress,
-                    pageExportState.pageNumber,
-                    pageExportState.pageCount,
-                )
-
-                PageExportState.Idle,
-                is PageExportState.Error,
-                -> Unit
-            }
-            when (ocrUiState) {
-                OcrUiState.Recognizing -> StatusMessage(R.string.ocr_recognizing_progress)
-                is OcrUiState.Error -> StatusMessage(
-                    message = stringResource(
-                        when (ocrUiState.reason) {
-                            OcrUiError.NO_PAGES -> R.string.ocr_error_no_pages
-                            OcrUiError.ALL_PAGES_FAILED -> R.string.ocr_error_all_pages_failed
-                            OcrUiError.UNEXPECTED_FAILURE -> R.string.ocr_error_unexpected
-                        },
-                    ),
-                    isError = true,
-                )
-
-                OcrUiState.Idle,
-                is OcrUiState.Success,
-                -> Unit
-            }
-
-            OutlinedButton(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = onScanAgain,
-            ) {
-                Text(stringResource(R.string.scan_again_action))
-            }
+        }
+        if (ocrUiState is OcrUiState.Success) {
             TextButton(
                 modifier = Modifier.fillMaxWidth(),
-                onClick = onDiscard,
+                onClick = onViewRecognizedText,
             ) {
-                Text(stringResource(R.string.home_clear_scan_result))
+                Text(stringResource(R.string.ocr_view_action))
+            }
+        }
+        if (hasPdf || hasPages) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(PageHarborSpacing.small),
+            ) {
+                if (hasPdf) {
+                    TextButton(
+                        modifier = Modifier.weight(1f),
+                        enabled = !sharing,
+                        onClick = onSharePdf,
+                    ) {
+                        Text(stringResource(R.string.pdf_share_action))
+                    }
+                }
+                if (hasPages) {
+                    TextButton(
+                        modifier = Modifier.weight(1f),
+                        enabled = !exporting,
+                        onClick = onExportPages,
+                    ) {
+                        Text(stringResource(R.string.page_export_action))
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun PagePreviewNavigator(
-    selectedPageIndex: Int,
+private fun PageToolbar(
+    selectedPageIndex: Int?,
     pageCount: Int,
     onSelectedPageChange: (Int) -> Unit,
+    onAddPages: () -> Unit,
 ) {
-    Row(
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceVariant,
     ) {
-        OutlinedButton(
-            enabled = selectedPageIndex > 0,
-            onClick = { onSelectedPageChange(selectedPageIndex - 1) },
+        Column(
+            modifier = Modifier.padding(PageHarborSpacing.compact),
+            verticalArrangement = Arrangement.spacedBy(PageHarborSpacing.extraSmall),
         ) {
-            Text(stringResource(R.string.ocr_previous_page_action))
+            if (selectedPageIndex != null && pageCount > 1) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(
+                        modifier = Modifier.weight(1f),
+                        enabled = selectedPageIndex > 0,
+                        onClick = { onSelectedPageChange(selectedPageIndex - 1) },
+                    ) {
+                        Text(stringResource(R.string.ocr_previous_page_action))
+                    }
+                    Text(
+                        modifier = Modifier
+                            .weight(1f)
+                            .semantics { liveRegion = LiveRegionMode.Polite },
+                        text = stringResource(
+                            R.string.ocr_page_indicator,
+                            selectedPageIndex + 1,
+                            pageCount,
+                        ),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                    TextButton(
+                        modifier = Modifier.weight(1f),
+                        enabled = selectedPageIndex < pageCount - 1,
+                        onClick = { onSelectedPageChange(selectedPageIndex + 1) },
+                    ) {
+                        Text(stringResource(R.string.ocr_next_page_action))
+                    }
+                }
+            }
+            TextButton(
+                modifier = Modifier.align(Alignment.End),
+                onClick = onAddPages,
+            ) {
+                Text(stringResource(R.string.scan_again_action))
+            }
         }
-        Text(
-            modifier = Modifier.padding(top = 12.dp),
-            text = stringResource(R.string.ocr_page_indicator, selectedPageIndex + 1, pageCount),
-        )
-        OutlinedButton(
-            enabled = selectedPageIndex < pageCount - 1,
-            onClick = { onSelectedPageChange(selectedPageIndex + 1) },
-        ) {
-            Text(stringResource(R.string.ocr_next_page_action))
+    }
+}
+@Composable
+private fun OperationStatus(
+    pdfSaveState: PdfSaveState,
+    searchablePdfSaveState: SearchablePdfSaveState,
+    sharing: Boolean,
+    pageExportState: PageExportState,
+    ocrUiState: OcrUiState,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(PageHarborSpacing.small)) {
+        if (pdfSaveState == PdfSaveState.Saving) {
+            InlineOperationStatus(R.string.pdf_save_progress)
+        }
+        when (searchablePdfSaveState) {
+            SearchablePdfSaveState.Preparing -> {
+                InlineOperationStatus(R.string.searchable_pdf_preparing_progress)
+            }
+
+            SearchablePdfSaveState.Recognizing -> {
+                InlineOperationStatus(R.string.searchable_pdf_recognizing_progress)
+            }
+
+            SearchablePdfSaveState.Generating -> {
+                InlineOperationStatus(R.string.searchable_pdf_generating_progress)
+            }
+
+            SearchablePdfSaveState.Saving -> {
+                InlineOperationStatus(R.string.searchable_pdf_saving_progress)
+            }
+
+            SearchablePdfSaveState.Idle,
+            SearchablePdfSaveState.ChoosingDestination,
+            SearchablePdfSaveState.Saved,
+            SearchablePdfSaveState.Cancelled,
+            is SearchablePdfSaveState.Error,
+            -> Unit
+        }
+        if (sharing) {
+            InlineOperationStatus(R.string.pdf_share_progress)
+        }
+        when (pageExportState) {
+            is PageExportState.Exporting -> InlineOperationStatus(
+                R.string.page_export_progress,
+                pageExportState.pageNumber,
+                pageExportState.pageCount,
+            )
+
+            PageExportState.Idle,
+            is PageExportState.ChoosingDestination,
+            is PageExportState.Cancelled,
+            is PageExportState.Completed,
+            is PageExportState.Error,
+            -> Unit
+        }
+        when (ocrUiState) {
+            OcrUiState.Recognizing -> InlineOperationStatus(R.string.ocr_recognizing_progress)
+
+            OcrUiState.Idle,
+            is OcrUiState.Error,
+            is OcrUiState.Success,
+            -> Unit
         }
     }
 }
@@ -361,16 +459,17 @@ private fun FilterSelector(
     selectedFilter: DocumentFilter,
     onFilterSelected: (DocumentFilter) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(PageHarborSpacing.extraSmall)) {
         Text(
             text = stringResource(R.string.filter_selector_heading),
-            style = MaterialTheme.typography.titleSmall,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(PageHarborSpacing.small),
         ) {
             filterSelectorOptions.forEach { option ->
                 val accessibleLabel = stringResource(option.contentDescriptionRes)
@@ -385,26 +484,4 @@ private fun FilterSelector(
             }
         }
     }
-}
-
-@Composable
-private fun StatusMessage(
-    @StringRes messageRes: Int,
-    vararg formatArgs: Any,
-) {
-    StatusMessage(message = stringResource(messageRes, *formatArgs))
-}
-
-@Composable
-private fun StatusMessage(
-    message: String,
-    isError: Boolean = false,
-) {
-    Text(
-        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-        text = message,
-        style = MaterialTheme.typography.bodyMedium,
-        color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-        textAlign = TextAlign.Start,
-    )
 }

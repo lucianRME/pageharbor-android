@@ -1,7 +1,7 @@
 package org.synapseworks.pageharbor.ui.home
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,7 +34,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import org.synapseworks.pageharbor.R
 import org.synapseworks.pageharbor.document.PageExportState
 import org.synapseworks.pageharbor.document.PdfSaveState
@@ -46,6 +45,8 @@ import org.synapseworks.pageharbor.ocr.canStartOcr
 import org.synapseworks.pageharbor.ocr.failedPageCount
 import org.synapseworks.pageharbor.ocr.formatOcrPreview
 import org.synapseworks.pageharbor.ocr.textFoundPageCount
+import org.synapseworks.pageharbor.ui.theme.PageHarborLayout
+import org.synapseworks.pageharbor.ui.theme.PageHarborSpacing
 
 @Composable
 fun HomeScreen(
@@ -77,15 +78,23 @@ fun HomeScreen(
                 .padding(innerPadding),
             color = MaterialTheme.colorScheme.background,
         ) {
-            Box(
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 24.dp, vertical = 32.dp),
-                contentAlignment = Alignment.Center,
+                    .padding(
+                        horizontal = PageHarborLayout.compactScreenHorizontalPadding,
+                        vertical = PageHarborSpacing.screen,
+                    ),
             ) {
+                val contentAlignment = if (maxHeight >= PageHarborLayout.homeCenteredContentMinHeight) {
+                    Alignment.Center
+                } else {
+                    Alignment.TopCenter
+                }
                 Column(
                     modifier = Modifier
-                        .widthIn(max = 520.dp)
+                        .align(contentAlignment)
+                        .widthIn(max = PageHarborLayout.homeContentMaxWidth)
                         .fillMaxWidth()
                         .verticalScroll(rememberScrollState()),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -94,21 +103,21 @@ fun HomeScreen(
                     Text(
                         modifier = Modifier.semantics { heading() },
                         text = stringResource(R.string.app_name),
-                        style = MaterialTheme.typography.headlineLarge,
+                        style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onBackground,
                         textAlign = TextAlign.Center,
                     )
                     Text(
                         modifier = Modifier
-                            .padding(top = 32.dp)
+                            .padding(top = PageHarborSpacing.extraLarge)
                             .semantics { heading() },
                         text = stringResource(R.string.home_headline),
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onBackground,
                         textAlign = TextAlign.Center,
                     )
                     Text(
-                        modifier = Modifier.padding(top = 16.dp),
+                        modifier = Modifier.padding(top = PageHarborSpacing.large),
                         text = stringResource(R.string.home_supporting_text),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -117,38 +126,18 @@ fun HomeScreen(
                     Button(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 40.dp),
+                            .padding(top = PageHarborSpacing.extraLarge),
                         enabled = scannerSpikeState != ScannerSpikeState.Preparing,
                         onClick = onScanDocument,
                     ) {
                         Text(text = stringResource(R.string.home_scan_document))
                     }
-                    when (scannerSpikeState) {
-                        ScannerSpikeState.Preparing -> {
-                            Text(
-                                modifier = Modifier
-                                    .padding(top = 16.dp)
-                                    .semantics { liveRegion = LiveRegionMode.Polite },
-                                text = stringResource(R.string.home_scan_preparing),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onBackground,
-                                textAlign = TextAlign.Center,
-                            )
-                        }
-
-                        is ScannerSpikeState.ResultSummary -> {
-                            TextButton(onClick = onViewScanResult) {
-                                Text(text = stringResource(R.string.home_view_scan_result))
-                            }
-                        }
-
-                        ScannerSpikeState.Idle,
-                        ScannerSpikeState.Cancelled,
-                        ScannerSpikeState.Error,
-                        -> Unit
-                    }
+                    HomeScanStatus(
+                        scannerSpikeState = scannerSpikeState,
+                        onViewScanResult = onViewScanResult,
+                    )
                     TextButton(
-                        modifier = Modifier.padding(top = 8.dp),
+                        modifier = Modifier.padding(top = PageHarborSpacing.small),
                         onClick = onPrivacyInfo,
                     ) {
                         Text(text = stringResource(R.string.home_privacy_action))
@@ -159,15 +148,15 @@ fun HomeScreen(
                         Text(text = stringResource(R.string.home_about_action))
                     }
                     Text(
-                        modifier = Modifier.padding(top = 24.dp),
+                        modifier = Modifier.padding(top = PageHarborSpacing.extraLarge),
                         text = stringResource(R.string.home_footer),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onBackground,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
                     )
                     if (showBuildDetails) {
                         Text(
-                            modifier = Modifier.padding(top = 12.dp),
+                            modifier = Modifier.padding(top = PageHarborSpacing.medium),
                             text = stringResource(
                                 R.string.home_debug_build_label,
                                 versionName,
@@ -203,6 +192,35 @@ fun HomeScreen(
 }
 
 @Composable
+private fun HomeScanStatus(
+    scannerSpikeState: ScannerSpikeState,
+    onViewScanResult: () -> Unit,
+) {
+    when (scannerSpikeState) {
+        ScannerSpikeState.Preparing -> {
+            InlineOperationStatus(
+                messageRes = R.string.home_scan_preparing,
+                modifier = Modifier.padding(top = PageHarborSpacing.large),
+            )
+        }
+
+        is ScannerSpikeState.ResultSummary -> {
+            TextButton(
+                modifier = Modifier.padding(top = PageHarborSpacing.small),
+                onClick = onViewScanResult,
+            ) {
+                Text(text = stringResource(R.string.home_view_scan_result))
+            }
+        }
+
+        ScannerSpikeState.Idle,
+        ScannerSpikeState.Cancelled,
+        ScannerSpikeState.Error,
+        -> Unit
+    }
+}
+
+@Composable
 private fun ScanResultSummary(
     resultSummary: ScannerSpikeState.ResultSummary,
     pdfSaveState: PdfSaveState,
@@ -230,7 +248,7 @@ private fun ScanResultSummary(
     Column(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(PageHarborSpacing.small),
     ) {
         Text(
             text = stringResource(R.string.home_scan_result_title),
@@ -273,7 +291,7 @@ private fun ScanResultSummary(
         )
         if (resultSummary.hasPdf) {
             Button(
-                modifier = Modifier.padding(top = 8.dp),
+                modifier = Modifier.padding(top = PageHarborSpacing.small),
                 enabled = !saveInProgress,
                 onClick = onSavePdf,
             ) {
@@ -281,7 +299,7 @@ private fun ScanResultSummary(
             }
         }
         if (resultSummary.hasPdf || resultSummary.jpegPageCount > 0) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(PageHarborSpacing.small)) {
                 if (resultSummary.hasPdf) {
                     OutlinedButton(
                         enabled = !shareInProgress,
@@ -302,11 +320,13 @@ private fun ScanResultSummary(
         }
         if (saveInProgress) {
             Row(
-                modifier = Modifier.padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(top = PageHarborSpacing.small),
+                horizontalArrangement = Arrangement.spacedBy(PageHarborSpacing.small),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                CircularProgressIndicator(
+                    modifier = Modifier.size(PageHarborLayout.inlineProgressIndicatorSize),
+                )
                 Text(
                     text = stringResource(R.string.pdf_save_progress),
                     style = MaterialTheme.typography.bodyMedium,
@@ -316,11 +336,13 @@ private fun ScanResultSummary(
         }
         if (shareInProgress) {
             Row(
-                modifier = Modifier.padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(top = PageHarborSpacing.small),
+                horizontalArrangement = Arrangement.spacedBy(PageHarborSpacing.small),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                CircularProgressIndicator(
+                    modifier = Modifier.size(PageHarborLayout.inlineProgressIndicatorSize),
+                )
                 Text(
                     text = stringResource(R.string.pdf_share_progress),
                     style = MaterialTheme.typography.bodyMedium,
@@ -340,11 +362,13 @@ private fun ScanResultSummary(
                 else -> error("Unexpected page export state")
             }
             Row(
-                modifier = Modifier.padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(top = PageHarborSpacing.small),
+                horizontalArrangement = Arrangement.spacedBy(PageHarborSpacing.small),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                CircularProgressIndicator(
+                    modifier = Modifier.size(PageHarborLayout.inlineProgressIndicatorSize),
+                )
                 Text(
                     text = stringResource(
                         R.string.page_export_progress,
@@ -402,7 +426,7 @@ private fun ScanResultSummary(
             onClearRecognizedText = onClearRecognizedText,
         )
         OutlinedButton(
-            modifier = Modifier.padding(top = 8.dp),
+            modifier = Modifier.padding(top = PageHarborSpacing.small),
             onClick = onClearScanResult,
         ) {
             Text(text = stringResource(R.string.home_clear_scan_result))
@@ -422,12 +446,14 @@ private fun OcrResultSection(
         OcrUiState.Recognizing -> {
             Row(
                 modifier = Modifier
-                    .padding(top = 8.dp)
+                    .padding(top = PageHarborSpacing.small)
                     .semantics { liveRegion = LiveRegionMode.Polite },
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(PageHarborSpacing.small),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                CircularProgressIndicator(
+                    modifier = Modifier.size(PageHarborLayout.inlineProgressIndicatorSize),
+                )
                 Text(
                     text = stringResource(R.string.ocr_recognizing_progress),
                     style = MaterialTheme.typography.bodyMedium,
@@ -443,7 +469,7 @@ private fun OcrResultSection(
                 OcrUiError.UNEXPECTED_FAILURE -> stringResource(R.string.ocr_error_unexpected)
             }
             Text(
-                modifier = Modifier.padding(top = 8.dp),
+                modifier = Modifier.padding(top = PageHarborSpacing.small),
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
@@ -472,9 +498,9 @@ private fun PrivacyInfoDialog(onDismiss: () -> Unit) {
         text = {
             Column(
                 modifier = Modifier
-                    .heightIn(max = 360.dp)
+                    .heightIn(max = PageHarborLayout.scrollableDialogContentMaxHeight)
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(PageHarborSpacing.medium),
             ) {
                 Text(text = stringResource(R.string.home_privacy_dialog_local_processing))
                 Text(text = stringResource(R.string.home_privacy_dialog_no_cloud))
@@ -512,9 +538,9 @@ private fun AboutDialog(
         text = {
             Column(
                 modifier = Modifier
-                    .heightIn(max = 360.dp)
+                    .heightIn(max = PageHarborLayout.scrollableDialogContentMaxHeight)
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(PageHarborSpacing.dialog),
             ) {
                 Text(text = stringResource(R.string.about_tagline))
                 Text(text = stringResource(R.string.about_version, versionName))

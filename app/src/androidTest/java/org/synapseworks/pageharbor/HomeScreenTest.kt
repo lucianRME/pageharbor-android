@@ -1,6 +1,7 @@
 package org.synapseworks.pageharbor
 
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -113,6 +114,39 @@ class HomeScreenTest {
             .assertIsNotEnabled()
         composeTestRule.onNodeWithText("Preparing scanner…")
             .assertIsDisplayed()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite))
+    }
+
+    @Test
+    fun homeScanActionRemainsReachableInANarrowShortWindowAtTwoHundredPercentFont() {
+        composeTestRule.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = 2f)) {
+                Box(modifier = androidx.compose.ui.Modifier.size(width = 320.dp, height = 320.dp)) {
+                    PageHarborApp()
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Scan document").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun currentScanRemainsASecondaryActionOnHome() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                autoNavigateToScanResult = false,
+                scannerSpikeState = ScannerSpikeState.ResultSummary(
+                    jpegPageCount = 1,
+                    hasPdf = true,
+                    pdfPageCount = 1,
+                ),
+            )
+        }
+
+        composeTestRule.onNodeWithText("Scan document")
+            .assertIsDisplayed()
+            .assertIsEnabled()
+        composeTestRule.onNodeWithText("View current scan").assertIsDisplayed()
     }
 
     @Test
@@ -370,7 +404,7 @@ class HomeScreenTest {
     }
 
     @Test
-    fun pageDestinationPickerStateDisablesRepeatedClicksAndShowsProgress() {
+    fun pageDestinationPickerStateDisablesRepeatedClicksWithoutFakeProgress() {
         composeTestRule.setContent {
             PageHarborApp(
                 scannerSpikeState = ScannerSpikeState.ResultSummary(
@@ -388,7 +422,7 @@ class HomeScreenTest {
         composeTestRule.onNodeWithText("Export Pages")
             .assertIsDisplayed()
             .assertIsNotEnabled()
-        composeTestRule.onNodeWithText("Exporting page 1 of 2…").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Exporting page 1 of 2…").assertCountEquals(0)
     }
 
     @Test
@@ -404,7 +438,7 @@ class HomeScreenTest {
             )
         }
 
-        composeTestRule.onNodeWithText("PDF saved successfully").assertIsDisplayed()
+        composeTestRule.onNodeWithText("PDF saved").assertIsDisplayed()
         composeTestRule.onNodeWithText("Save PDF").assertIsEnabled()
     }
 
@@ -421,7 +455,7 @@ class HomeScreenTest {
             )
         }
 
-        composeTestRule.onNodeWithText("✓ Pages exported successfully").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Pages exported").assertIsDisplayed()
     }
 
     @Test
@@ -461,7 +495,7 @@ class HomeScreenTest {
             .assertIsDisplayed()
             .assertIsEnabled()
         composeTestRule.onAllNodesWithText("Saving PDF…").assertCountEquals(0)
-        composeTestRule.onAllNodesWithText("✓ PDF saved successfully").assertCountEquals(0)
+        composeTestRule.onAllNodesWithText("PDF saved").assertCountEquals(0)
     }
 
     @Test
@@ -662,7 +696,7 @@ class HomeScreenTest {
         composeTestRule.runOnIdle { state.value = SearchablePdfSaveState.ChoosingDestination }
 
         composeTestRule.onNodeWithText("Save searchable PDF").assertIsNotEnabled()
-        composeTestRule.onNodeWithText("Preparing searchable PDF…").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Preparing searchable PDF…").assertCountEquals(0)
     }
 
     @Test
@@ -698,18 +732,17 @@ class HomeScreenTest {
                 searchablePdfSaveState = state.value,
             )
         }
-        composeTestRule.onNodeWithText("Searchable PDF saved successfully").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Searchable PDF saved").assertIsDisplayed()
         composeTestRule.onNodeWithText("Save searchable PDF").assertIsEnabled()
 
         composeTestRule.runOnIdle { state.value = SearchablePdfSaveState.Cancelled }
-        composeTestRule.onNodeWithText("Searchable PDF save cancelled.").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Searchable PDF save cancelled.").assertIsDisplayed()
         composeTestRule.onNodeWithText("Save searchable PDF").assertIsEnabled()
 
         composeTestRule.runOnIdle {
             state.value = SearchablePdfSaveState.Error(SearchablePdfSaveError.PREPARATION_FAILED)
         }
         composeTestRule.onNodeWithText("Searchable PDF could not be prepared. Try again.")
-            .performScrollTo()
             .assertIsDisplayed()
     }
 
@@ -726,6 +759,79 @@ class HomeScreenTest {
         composeTestRule.onNodeWithText("Share PDF").assertIsEnabled()
         composeTestRule.onNodeWithText("Export Pages").assertIsEnabled()
         composeTestRule.onNodeWithText("Recognize Text").assertIsEnabled()
+    }
+
+    @Test
+    fun scanResultPageControlsFiltersAndAddPagesRemainAccessible() {
+        var addPagesCalls = 0
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = scanSummary(jpegPageCount = 2),
+                scanPages = listOf(
+                    ActiveScanPage(id = 1L, sourceUri = null),
+                    ActiveScanPage(id = 2L, sourceUri = null),
+                ),
+                onScanDocument = { addPagesCalls += 1 },
+            )
+        }
+
+        composeTestRule.onNode(
+            SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite)
+                .and(hasText("Page 1 of 2")),
+        ).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Previous page").assertIsNotEnabled()
+        composeTestRule.onNodeWithText("Next page").performClick()
+        composeTestRule.onNodeWithText("Page 2 of 2").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Next page").assertIsNotEnabled()
+        composeTestRule.onNodeWithContentDescription("Original")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, true))
+        composeTestRule.onNodeWithText("Add pages").performClick()
+
+        assertEquals(1, addPagesCalls)
+    }
+
+    @Test
+    fun scanResultEditorRetainsEveryDocumentTool() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = scanSummary(jpegPageCount = 1),
+                scanPages = listOf(ActiveScanPage(id = 1L, sourceUri = null)),
+            )
+        }
+
+        listOf("Original", "Enhance", "Grayscale", "B&W", "High Contrast").forEach { label ->
+            composeTestRule.onAllNodesWithText(label).assertCountEquals(1)
+        }
+        listOf(
+            "Add pages",
+            "Recognize Text",
+            "Save PDF",
+            "Save searchable PDF",
+            "Share PDF",
+            "Export Pages",
+            "Discard",
+        ).forEach { action ->
+            composeTestRule.onNodeWithText(action).performScrollTo().assertIsDisplayed()
+        }
+    }
+
+    @Test
+    fun scanResultControlsRemainReachableInANarrowShortWindow() {
+        composeTestRule.setContent {
+            Box(modifier = androidx.compose.ui.Modifier.size(width = 320.dp, height = 320.dp)) {
+                PageHarborApp(
+                    scannerSpikeState = scanSummary(jpegPageCount = 2),
+                    scanPages = listOf(
+                        ActiveScanPage(id = 1L, sourceUri = null),
+                        ActiveScanPage(id = 2L, sourceUri = null),
+                    ),
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("Page 1 of 2").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Filter").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Save PDF").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -793,6 +899,10 @@ class HomeScreenTest {
         }
 
         composeTestRule.onNodeWithText("View recognized text").performScrollTo().performClick()
+        composeTestRule.onNode(
+            SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite)
+                .and(hasText("Page 1 of 2")),
+        ).assertIsDisplayed()
         composeTestRule.onNodeWithContentDescription("Scanned document preview, page 1 of 2")
             .assertIsDisplayed()
         composeTestRule.onNodeWithText("Previous page").assertIsNotEnabled()
@@ -801,6 +911,37 @@ class HomeScreenTest {
         composeTestRule.onNodeWithText("Page 2 of 2").assertIsDisplayed()
         composeTestRule.onNodeWithText("Second page text").assertIsDisplayed()
         composeTestRule.onNodeWithText("Next page").assertIsNotEnabled()
+    }
+
+    @Test
+    fun formattedOcrTextAndActionsRemainReachableAtTwoHundredPercentFont() {
+        composeTestRule.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = 2f)) {
+                Box(modifier = androidx.compose.ui.Modifier.size(width = 320.dp, height = 600.dp)) {
+                    PageHarborApp(
+                        scannerSpikeState = scanSummary(jpegPageCount = 1),
+                        ocrUiState = OcrUiState.Success(
+                            OcrResult(
+                                listOf(
+                                    OcrPageResult(
+                                        pageIndex = 0,
+                                        text = "Heading\n  Preserved indentation",
+                                    ),
+                                ),
+                            ),
+                        ),
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("View recognized text").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("Heading\n  Preserved indentation")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("Copy text").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Recognize Again").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Clear").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -900,6 +1041,7 @@ class HomeScreenTest {
             SemanticsMatcher.expectValue(SemanticsProperties.Heading, Unit)
                 .and(hasText("Scanned document")),
         ).assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Scanned document").assertCountEquals(1)
         composeTestRule.onNode(
             SemanticsMatcher.expectValue(SemanticsProperties.Heading, Unit)
                 .and(hasText("Scan complete")),
@@ -907,18 +1049,57 @@ class HomeScreenTest {
     }
 
     @Test
-    fun searchablePdfProgressAndCancellationAreLiveAnnouncements() {
+    fun searchablePdfProgressIsAPoliteLiveAnnouncement() {
         composeTestRule.setContent {
             PageHarborApp(
                 scannerSpikeState = scanSummary(jpegPageCount = 1),
-                searchablePdfSaveState = SearchablePdfSaveState.Cancelled,
+                searchablePdfSaveState = SearchablePdfSaveState.Generating,
             )
         }
 
         composeTestRule.onNode(
             SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite)
-                .and(hasText("Searchable PDF save cancelled.")),
+                .and(hasText("Generating searchable PDF…")),
         ).assertIsDisplayed()
+    }
+
+    @Test
+    fun completionClearsProgressAndUsesConciseSuccessFeedback() {
+        val state = mutableStateOf<PdfSaveState>(PdfSaveState.Saving)
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = scanSummary(jpegPageCount = 1),
+                pdfSaveState = state.value,
+            )
+        }
+
+        composeTestRule.onNode(
+            SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite)
+                .and(hasText("Saving PDF…")),
+        ).assertIsDisplayed()
+
+        composeTestRule.runOnIdle { state.value = PdfSaveState.Saved }
+
+        composeTestRule.onAllNodesWithText("Saving PDF…").assertCountEquals(0)
+        composeTestRule.onNodeWithText("PDF saved").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Save PDF").assertIsEnabled()
+    }
+
+    @Test
+    fun pdfFailureUsesSafeUserFacingFeedback() {
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = scanSummary(jpegPageCount = 1),
+                pdfSaveState = PdfSaveState.Error(
+                    org.synapseworks.pageharbor.document.PdfExportResult.WriteFailed,
+                ),
+            )
+        }
+
+        composeTestRule.onNodeWithText("PDF could not be saved. Try another destination.")
+            .assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("FileNotFoundException").assertCountEquals(0)
+        composeTestRule.onNodeWithText("Save PDF").assertIsEnabled()
     }
 
     @Test

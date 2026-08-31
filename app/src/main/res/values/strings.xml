@@ -23,7 +23,7 @@
     <string name="filter_high_contrast">High Contrast</string>
     <string name="scan_result_export_section">Save and share</string>
     <string name="scan_result_tools_section">More actions</string>
-    <string name="scan_again_action">Scan again</string>
+    <string name="scan_again_action">Add pages</string>
     <string name="home_scan_preparing">Preparing scanner…</string>
     <string name="home_scan_cancelled">Scan cancelled.</string>
     <string name="home_scanner_error">Document scanner could not be opened.</string>
@@ -64,7 +64,7 @@
     <string name="ocr_error_unexpected">Text recognition could not be completed.</string>
     <string name="pdf_save_action">Save PDF</string>
     <string name="pdf_save_progress">Saving PDF…</string>
-    <string name="pdf_save_success">PDF saved successfully</string>
+    <string name="pdf_save_success">PDF saved</string>
     <string name="pdf_save_source_missing">PDF could not be saved because the scan result is no longer available.</string>
     <string name="pdf_save_destination_unavailable">Selected destination is unavailable.</string>
     <string name="pdf_save_failed">PDF could not be saved. Try another destination.</string>
@@ -73,7 +73,7 @@
     <string name="searchable_pdf_recognizing_progress">Recognizing text…</string>
     <string name="searchable_pdf_generating_progress">Generating searchable PDF…</string>
     <string name="searchable_pdf_saving_progress">Saving searchable PDF…</string>
-    <string name="searchable_pdf_save_success">Searchable PDF saved successfully</string>
+    <string name="searchable_pdf_save_success">Searchable PDF saved</string>
     <string name="searchable_pdf_cancelled">Searchable PDF save cancelled.</string>
     <string name="searchable_pdf_error_no_pages">No scanned pages are available for a searchable PDF.</string>
     <string name="searchable_pdf_error_preparation_failed">Searchable PDF could not be prepared. Try again.</string>
@@ -90,7 +90,7 @@
     <string name="pdf_share_failed">PDF could not be shared.</string>
     <string name="page_export_action">Export Pages</string>
     <string name="page_export_progress">Exporting page %1$d of %2$d…</string>
-    <string name="page_export_success">✓ Pages exported successfully</string>
+    <string name="page_export_success">Pages exported</string>
     <string name="page_export_cancelled">Page export cancelled.</string>
     <string name="page_export_source_missing">Pages could not be exported because the scan result is no longer available.</string>
     <string name="page_export_destination_unavailable">Selected destination is unavailable.</string>

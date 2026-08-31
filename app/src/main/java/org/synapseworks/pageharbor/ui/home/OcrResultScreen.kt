@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
@@ -22,6 +22,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -34,10 +35,12 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -48,6 +51,8 @@ import org.synapseworks.pageharbor.ocr.copyableOcrPreview
 import org.synapseworks.pageharbor.ocr.displayText
 import org.synapseworks.pageharbor.ocr.failedPageCount
 import org.synapseworks.pageharbor.ocr.textFoundPageCount
+import org.synapseworks.pageharbor.ui.theme.PageHarborLayout
+import org.synapseworks.pageharbor.ui.theme.PageHarborSpacing
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -84,58 +89,53 @@ fun OcrResultScreen(
                     )
                 },
                 navigationIcon = {
-                    TextButton(
-                        modifier = Modifier.semantics {
-                            contentDescription = context.getString(R.string.ocr_back_content_description)
-                        },
-                        onClick = onBack,
-                    ) { Text(stringResource(R.string.ocr_back_action)) }
+                    TextButton(onClick = onBack) {
+                        Text(stringResource(R.string.ocr_back_action))
+                    }
                 },
             )
         },
     ) { innerPadding ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                horizontal = 24.dp,
-                vertical = 16.dp,
-            ),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .widthIn(max = PageHarborLayout.expandedContentMaxWidth)
+                    .fillMaxSize()
+                    .padding(
+                        horizontal = PageHarborLayout.compactScreenHorizontalPadding,
+                        vertical = PageHarborLayout.compactScreenVerticalPadding,
+                    )
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(PageHarborSpacing.large),
+            ) {
                 OcrSummary(
                     pageCount = pageCount,
                     textFoundPageCount = textFoundPageCount,
                     failedPageCount = result.failedPageCount(),
                 )
-            }
 
-            if (pageCount > 1) {
-                item {
+                if (pageCount > 1) {
                     OcrPageNavigation(
                         selectedPageIndex = selectedIndex,
                         pageCount = pageCount,
                         onSelectedPageChange = onSelectedPageChange,
                     )
                 }
-            }
 
-            selectedPage?.let { page ->
-                item {
+                selectedPage?.let { page ->
+                    OcrPageText(page)
                     ScannedDocumentPreview(
                         pageUri = pageUris.getOrNull(selectedIndex),
                         pageNumber = selectedIndex + 1,
                         pageCount = pageCount,
                     )
                 }
-                item {
-                    OcrPageText(page)
-                }
-            }
 
-            item {
                 OcrActions(
                     copyPayload = copyPayload,
                     onCopyText = onCopyText,
@@ -153,7 +153,7 @@ private fun OcrSummary(
     textFoundPageCount: Int,
     failedPageCount: Int,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(PageHarborSpacing.small)) {
         Text(
             text = if (textFoundPageCount == 0) {
                 stringResource(R.string.ocr_no_text)
@@ -180,14 +180,19 @@ private fun OcrPageNavigation(
     pageCount: Int,
     onSelectedPageChange: (Int) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(PageHarborSpacing.small)) {
         Text(
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { liveRegion = LiveRegionMode.Polite },
             text = stringResource(R.string.ocr_page_indicator, selectedPageIndex + 1, pageCount),
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
         )
         androidx.compose.foundation.layout.Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(PageHarborSpacing.medium),
         ) {
             OutlinedButton(
                 modifier = Modifier.weight(1f),
@@ -206,28 +211,35 @@ private fun OcrPageNavigation(
 @Composable
 private fun OcrPageText(page: OcrPageResult) {
     val displayText = page.displayText()
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(PageHarborSpacing.small)) {
         Text(
             modifier = Modifier.semantics { heading() },
             text = stringResource(R.string.ocr_text_section_heading),
             style = MaterialTheme.typography.titleMedium,
         )
-        if (displayText.isBlank()) {
-            Text(
-                text = stringResource(R.string.ocr_preview_empty_page),
-                style = MaterialTheme.typography.bodyLarge,
-            )
-        } else {
-            SelectionContainer {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.surface,
+        ) {
+            if (displayText.isBlank()) {
                 Text(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 360.dp)
-                        .verticalScroll(rememberScrollState()),
-                    text = displayText,
-                    style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 28.sp),
-                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(PageHarborSpacing.medium),
+                    text = stringResource(R.string.ocr_preview_empty_page),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            } else {
+                SelectionContainer {
+                    Text(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(PageHarborSpacing.medium),
+                        text = displayText,
+                        style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 28.sp),
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
             }
         }
     }
@@ -240,7 +252,7 @@ private fun ScannedDocumentPreview(
     pageCount: Int,
 ) {
     val description = stringResource(R.string.ocr_document_preview_description, pageNumber, pageCount)
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(PageHarborSpacing.small)) {
         Text(
             modifier = Modifier.semantics { heading() },
             text = stringResource(R.string.ocr_document_section_heading),
@@ -254,32 +266,39 @@ private fun ScannedDocumentPreview(
         } else {
             val contentResolver = LocalContext.current.contentResolver
             val previewState by rememberDocumentPreview(pageUri, contentResolver)
-            Box(
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 220.dp)
+                    .heightIn(
+                        min = PageHarborLayout.documentPreviewMinHeight,
+                        max = PageHarborLayout.documentPreviewMaxHeight,
+                    )
                     .semantics { contentDescription = description },
-                contentAlignment = Alignment.Center,
+                shape = MaterialTheme.shapes.large,
+                color = MaterialTheme.colorScheme.surfaceVariant,
             ) {
-                when (val state = previewState) {
-                    DocumentPreviewState.Loading -> Text(
-                        text = stringResource(R.string.ocr_preview_loading),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    when (val state = previewState) {
+                        DocumentPreviewState.Loading -> Text(
+                            text = stringResource(R.string.ocr_preview_loading),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
 
-                    DocumentPreviewState.Unavailable -> Text(
-                        text = stringResource(R.string.ocr_preview_unavailable),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
+                        DocumentPreviewState.Unavailable -> Text(
+                            text = stringResource(R.string.ocr_preview_unavailable),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
 
-                    is DocumentPreviewState.Ready -> Image(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 220.dp),
-                        bitmap = state.bitmap.asImageBitmap(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Fit,
-                    )
+                        is DocumentPreviewState.Ready -> Image(
+                            modifier = Modifier.fillMaxSize(),
+                            bitmap = state.bitmap.asImageBitmap(),
+                            contentDescription = null,
+                            contentScale = ContentScale.Fit,
+                        )
+                    }
                 }
             }
         }
@@ -338,7 +357,7 @@ private fun OcrActions(
     onRecognizeAgain: () -> Unit,
     onClearRecognizedText: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(PageHarborSpacing.small)) {
         if (copyPayload != null) {
             Button(
                 modifier = Modifier.fillMaxWidth(),

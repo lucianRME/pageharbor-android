@@ -6,9 +6,11 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -22,7 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -31,6 +33,7 @@ import org.synapseworks.pageharbor.R
 import org.synapseworks.pageharbor.image.ArgbImage
 import org.synapseworks.pageharbor.image.DocumentFilter
 import org.synapseworks.pageharbor.image.DocumentImageFilterEngine
+import org.synapseworks.pageharbor.ui.theme.PageHarborLayout
 
 /**
  * Displays a bounded, transient Scan Result preview. The source URI and scanner output are never
@@ -43,6 +46,8 @@ internal fun FilteredDocumentPreview(
     pageUri: Uri,
     pageNumber: Int,
     pageCount: Int,
+    minHeight: Dp = PageHarborLayout.documentPreviewMinHeight,
+    maxHeight: Dp = PageHarborLayout.documentPreviewMaxHeight,
 ) {
     val contentResolver = LocalContext.current.contentResolver
     val currentRequest by rememberUpdatedState(request)
@@ -70,32 +75,39 @@ internal fun FilteredDocumentPreview(
         }
     }
     val description = stringResource(R.string.scan_preview_description, pageNumber, pageCount)
-    Box(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(max = 220.dp)
+            .heightIn(
+                min = minHeight,
+                max = maxHeight,
+            )
             .semantics { contentDescription = description },
-        contentAlignment = Alignment.Center,
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceVariant,
     ) {
-        when (val state = previewState) {
-            FilteredDocumentPreviewState.Loading -> Text(
-                text = stringResource(R.string.scan_preview_loading),
-                style = MaterialTheme.typography.bodyMedium,
-            )
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            when (val state = previewState) {
+                FilteredDocumentPreviewState.Loading -> Text(
+                    text = stringResource(R.string.scan_preview_loading),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
 
-            FilteredDocumentPreviewState.Unavailable -> Text(
-                text = stringResource(R.string.scan_preview_unavailable),
-                style = MaterialTheme.typography.bodyMedium,
-            )
+                FilteredDocumentPreviewState.Unavailable -> Text(
+                    text = stringResource(R.string.scan_preview_unavailable),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
 
-            is FilteredDocumentPreviewState.Ready -> Image(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 220.dp),
-                bitmap = state.bitmap.asImageBitmap(),
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
-            )
+                is FilteredDocumentPreviewState.Ready -> Image(
+                    modifier = Modifier.fillMaxSize(),
+                    bitmap = state.bitmap.asImageBitmap(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                )
+            }
         }
     }
 }
