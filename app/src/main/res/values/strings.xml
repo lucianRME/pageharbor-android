@@ -24,6 +24,7 @@
     <string name="scan_result_export_section">Save and share</string>
     <string name="scan_result_tools_section">More actions</string>
     <string name="scan_again_action">Add pages</string>
+    <string name="scan_page_limit_reached">Maximum 20 pages per scan</string>
     <string name="home_scan_preparing">Preparing scanner…</string>
     <string name="home_scan_cancelled">Scan cancelled.</string>
     <string name="home_scanner_error">Document scanner could not be opened.</string>

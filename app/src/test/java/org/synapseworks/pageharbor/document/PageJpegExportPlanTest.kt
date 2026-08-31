@@ -103,6 +103,16 @@ class PageJpegExportPlanTest {
         assertSame(source, applyExportFilter(source, DocumentFilter.ORIGINAL))
     }
 
+    @Test
+    fun twentyPagesProduceOneOrderedExportPlanPerPage() {
+        val pages = (1L..20L).map { page(it, DocumentFilter.ORIGINAL) }
+
+        assertEquals(
+            (1L..20L).map(PageJpegExportPlan::DirectCopy),
+            pages.map(::pageJpegExportPlan),
+        )
+    }
+
     private fun page(id: Long, filter: DocumentFilter): ActiveScanPage =
         ActiveScanPage(id = id, sourceUri = null, filter = filter)
 

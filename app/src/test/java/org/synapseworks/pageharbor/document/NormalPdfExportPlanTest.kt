@@ -121,6 +121,18 @@ class NormalPdfExportPlanTest {
         assertEquals(before, pages)
     }
 
+    @Test
+    fun twentyPageMixedDocumentRecomposesEveryPageInSessionOrder() {
+        val pages = (1L..20L).map { id ->
+            page(id, if (id == 11L) DocumentFilter.GRAYSCALE else DocumentFilter.ORIGINAL)
+        }
+
+        val plan = normalPdfExportPlan(null, pages) as NormalPdfExportPlan.RecomposeFromPages
+
+        assertEquals((1L..20L).toList(), plan.pages.map(NormalPdfPage::pageId))
+        assertEquals(DocumentFilter.GRAYSCALE, plan.pages[10].filter)
+    }
+
     private fun page(
         id: Long,
         filter: DocumentFilter = DocumentFilter.ORIGINAL,

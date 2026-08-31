@@ -40,6 +40,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import org.synapseworks.pageharbor.ActiveScanPage
+import org.synapseworks.pageharbor.MAX_SCAN_PAGES
 import org.synapseworks.pageharbor.R
 import org.synapseworks.pageharbor.document.PageExportState
 import org.synapseworks.pageharbor.document.PdfSaveState
@@ -83,6 +84,8 @@ fun ScanResultScreen(
     val selectedPageIndex = scanPages.indexOfFirst { it.id == selectedPageId }
         .takeIf { it >= 0 } ?: 0
     val selectedPage = scanPages.getOrNull(selectedPageIndex)
+    val displayedPageCount = scanPages.size.takeIf { it > 0 } ?: result.jpegPageCount
+    val canAddPages = displayedPageCount < MAX_SCAN_PAGES
     val saving = pdfSaveState == PdfSaveState.ChoosingDestination ||
         pdfSaveState == PdfSaveState.Saving
     val sharing = pdfShareState == PdfShareState.Preparing
@@ -132,13 +135,15 @@ fun ScanResultScreen(
                         page = page,
                         selectedPageIndex = selectedPageIndex,
                         pageCount = scanPages.size,
+                        canAddPages = canAddPages,
                         onSelectedPageChange = { index -> selectedPageId = scanPages[index].id },
                         onPageFilterChange = onPageFilterChange,
                         onAddPages = onScanAgain,
                     )
                 } ?: PageToolbar(
                     selectedPageIndex = null,
-                    pageCount = result.jpegPageCount,
+                    pageCount = displayedPageCount,
+                    canAddPages = canAddPages,
                     onSelectedPageChange = {},
                     onAddPages = onScanAgain,
                 )
@@ -206,6 +211,7 @@ private fun PageEditingSection(
     page: ActiveScanPage,
     selectedPageIndex: Int,
     pageCount: Int,
+    canAddPages: Boolean,
     onSelectedPageChange: (Int) -> Unit,
     onPageFilterChange: (Long, DocumentFilter) -> Unit,
     onAddPages: () -> Unit,
@@ -230,6 +236,7 @@ private fun PageEditingSection(
         PageToolbar(
             selectedPageIndex = selectedPageIndex,
             pageCount = pageCount,
+            canAddPages = canAddPages,
             onSelectedPageChange = onSelectedPageChange,
             onAddPages = onAddPages,
         )
@@ -335,6 +342,7 @@ private fun DocumentActionLayer(
 private fun PageToolbar(
     selectedPageIndex: Int?,
     pageCount: Int,
+    canAddPages: Boolean,
     onSelectedPageChange: (Int) -> Unit,
     onAddPages: () -> Unit,
 ) {
@@ -383,9 +391,17 @@ private fun PageToolbar(
             }
             TextButton(
                 modifier = Modifier.align(Alignment.End),
+                enabled = canAddPages,
                 onClick = onAddPages,
             ) {
                 Text(stringResource(R.string.scan_again_action))
+            }
+            if (!canAddPages) {
+                Text(
+                    text = stringResource(R.string.scan_page_limit_reached),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

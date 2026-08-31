@@ -791,6 +791,30 @@ class HomeScreenTest {
     }
 
     @Test
+    fun twentyPageScanNavigatesToTheLastPageAndDisablesAddPages() {
+        var addPagesCalls = 0
+        composeTestRule.setContent {
+            PageHarborApp(
+                scannerSpikeState = scanSummary(jpegPageCount = MAX_SCAN_PAGES),
+                scanPages = (1L..MAX_SCAN_PAGES.toLong()).map { id ->
+                    ActiveScanPage(id = id, sourceUri = null)
+                },
+                onScanDocument = { addPagesCalls += 1 },
+            )
+        }
+
+        repeat(MAX_SCAN_PAGES - 1) {
+            composeTestRule.onNodeWithText("Next page").performClick()
+        }
+
+        composeTestRule.onNodeWithText("Page 20 of 20").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Next page").assertIsNotEnabled()
+        composeTestRule.onNodeWithText("Add pages").assertIsNotEnabled()
+        composeTestRule.onNodeWithText("Maximum 20 pages per scan").assertIsDisplayed()
+        assertEquals(0, addPagesCalls)
+    }
+
+    @Test
     fun scanResultEditorRetainsEveryDocumentTool() {
         composeTestRule.setContent {
             PageHarborApp(

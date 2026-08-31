@@ -117,6 +117,87 @@ class PageHarborSessionViewModelTest {
     }
 
     @Test
+    fun twentyPageScanRetainsOrderFiltersAndConfigurationState() {
+        val tokens = (1..MAX_SCAN_PAGES).map { "page-$it" }
+        val session = completedSession(*tokens.toTypedArray())
+        val first = session.scanPages.first()
+        val twentieth = session.scanPages.last()
+
+        assertEquals(MAX_SCAN_PAGES, session.scanPages.size)
+        assertEquals((0L until MAX_SCAN_PAGES).toList(), session.scanPages.map(ActiveScanPage::id))
+        assertEquals(true, session.setPageFilter(first.id, DocumentFilter.GRAYSCALE))
+        assertEquals(true, session.setPageFilter(twentieth.id, DocumentFilter.HIGH_CONTRAST))
+        assertEquals(true, session.reorderPages(session.scanPages.map(ActiveScanPage::id).reversed()))
+
+        session.resetTransientStateForRecreation()
+
+        assertEquals(twentieth.id, session.scanPages.first().id)
+        assertEquals(DocumentFilter.HIGH_CONTRAST, session.scanPages.first().filter)
+        assertEquals(first.id, session.scanPages.last().id)
+        assertEquals(DocumentFilter.GRAYSCALE, session.scanPages.last().filter)
+        assertEquals(0, session.remainingPageCapacity())
+    }
+
+    @Test
+    fun addPagesUsesOnlyTheRemainingSessionCapacity() {
+        listOf(10 to 10, 15 to 5, 19 to 1).forEach { (existingCount, addedCount) ->
+            val session = completedSession(*pageTokens(existingCount).toTypedArray())
+
+            assertEquals(MAX_SCAN_PAGES - existingCount, session.remainingPageCapacity())
+            assertEquals(ScannerRequestMode.ADD_PAGES, session.beginScannerRequest())
+            session.completeScannerRequest(
+                scannerState = scanSummary(pageCount = addedCount),
+                scannedPdfUri = null,
+                scannedPageUris = pages(*pageTokens(addedCount, startAt = existingCount + 1).toTypedArray()),
+            )
+
+            assertEquals(MAX_SCAN_PAGES, session.scanPages.size)
+            assertEquals(MAX_SCAN_PAGES, (session.scannerState as ScannerSpikeState.ResultSummary).jpegPageCount)
+        }
+    }
+
+    @Test
+    fun addPagesNeverLetsAnExternalResultExceedTheSessionMaximum() {
+        val session = completedSession(*pageTokens(19).toTypedArray())
+
+        assertEquals(ScannerRequestMode.ADD_PAGES, session.beginScannerRequest())
+        session.completeScannerRequest(
+            scannerState = scanSummary(pageCount = 2),
+            scannedPdfUri = null,
+            scannedPageUris = pages("page-20", "page-21"),
+        )
+
+        assertEquals(MAX_SCAN_PAGES, session.scanPages.size)
+        assertEquals(MAX_SCAN_PAGES, (session.scannerState as ScannerSpikeState.ResultSummary).jpegPageCount)
+        assertEquals(19L, session.scanPages.last().id)
+    }
+
+    @Test
+    fun addPagesIsBlockedWhenTheSessionAlreadyHasTwentyPages() {
+        val session = completedSession(*pageTokens(MAX_SCAN_PAGES).toTypedArray())
+        val pagesBefore = session.scanPages
+
+        assertEquals(null, session.beginScannerRequest())
+        assertEquals(pagesBefore, session.scanPages)
+        assertEquals(0, session.remainingPageCapacity())
+    }
+
+    @Test
+    fun anUnexpectedOversizedInitialResultIsNotRetainedAsMoreThanTwentyPages() {
+        val session = PageHarborSessionViewModel()
+
+        session.replaceScan(
+            scannerState = scanSummary(pageCount = MAX_SCAN_PAGES + 1),
+            scannedPdfUri = null,
+            scannedPageUris = pages(*pageTokens(MAX_SCAN_PAGES + 1).toTypedArray()),
+        )
+
+        assertEquals(MAX_SCAN_PAGES, session.scanPages.size)
+        assertEquals(MAX_SCAN_PAGES, (session.scannerState as ScannerSpikeState.ResultSummary).jpegPageCount)
+        assertEquals(null, session.scannedPdfUri)
+    }
+
+    @Test
     fun cancelledInitialScanDoesNotCreateAnEmptyScanResult() {
         val session = PageHarborSessionViewModel()
 
@@ -300,6 +381,9 @@ class PageHarborSessionViewModelTest {
                 scannedPageUris = pages(*pageTokens),
             )
         }
+
+    private fun pageTokens(count: Int, startAt: Int = 1): List<String> =
+        (startAt until startAt + count).map { "page-$it" }
 
     @Suppress("UNCHECKED_CAST")
     private fun pages(vararg tokens: String): List<Uri> = List(tokens.size) { null } as List<Uri>

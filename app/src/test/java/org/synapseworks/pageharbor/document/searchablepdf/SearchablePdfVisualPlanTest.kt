@@ -74,4 +74,17 @@ class SearchablePdfVisualPlanTest {
         assertEquals(first, second)
         assertTrue(first is SearchablePdfVisualPlan.Filtered)
     }
+
+    @Test
+    fun twentyPageDocumentRetainsEveryOrderedOcrSourceAndVisualPlan() {
+        val pages = (1L..20L).map { pageId ->
+            pageId to if (pageId == 11L) DocumentFilter.HIGH_CONTRAST else DocumentFilter.ORIGINAL
+        }
+
+        val plans = pages.map { (pageId, filter) -> searchablePdfVisualPlan(pageId, filter) }
+
+        assertEquals((1L..20L).toList(), plans.map(SearchablePdfVisualPlan::pageId))
+        assertEquals(SearchablePdfOcrSource.ORIGINAL, plans[10].ocrSource)
+        assertEquals(SearchablePdfVisualPlan.Filtered(11L, DocumentFilter.HIGH_CONTRAST), plans[10])
+    }
 }

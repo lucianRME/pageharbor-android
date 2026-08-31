@@ -266,6 +266,7 @@ class MainActivity : ComponentActivity() {
 
     private fun launchDocumentScanner() {
         if (session.beginScannerRequest() == null) return
+        val remainingPageCapacity = session.remainingPageCapacity()
 
         val options = GmsDocumentScannerOptions.Builder()
             .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_BASE_WITH_FILTER)
@@ -274,7 +275,7 @@ class MainActivity : ComponentActivity() {
                 GmsDocumentScannerOptions.RESULT_FORMAT_PDF,
             )
             .setGalleryImportAllowed(true)
-            .setPageLimit(10)
+            .setPageLimit(remainingPageCapacity)
             .build()
 
         GmsDocumentScanning.getClient(options)

@@ -15,6 +15,9 @@ import org.synapseworks.pageharbor.scanner.ScannerSpikeState
 import org.synapseworks.pageharbor.scanner.createScannerResultSummary
 import org.synapseworks.pageharbor.ui.PageHarborScreen
 
+/** The maximum number of pages retained by one active, in-memory scan session. */
+internal const val MAX_SCAN_PAGES = 20
+
 /** Whether the external scanner is acquiring a first scan or pages for the active scan. */
 internal enum class ScannerRequestMode {
     INITIAL_SCAN,
@@ -56,6 +59,9 @@ class PageHarborSessionViewModel : ViewModel() {
      */
     internal fun beginScannerRequest(): ScannerRequestMode? {
         if (activeScannerRequest != null) return null
+        if (scannerState is ScannerSpikeState.ResultSummary && remainingPageCapacity() == 0) {
+            return null
+        }
 
         return if (scannerState is ScannerSpikeState.ResultSummary) {
             ScannerRequestMode.ADD_PAGES
@@ -64,6 +70,10 @@ class PageHarborSessionViewModel : ViewModel() {
             ScannerRequestMode.INITIAL_SCAN
         }.also { activeScannerRequest = it }
     }
+
+    /** The capacity that can safely be requested from the next scanner invocation. */
+    internal fun remainingPageCapacity(): Int =
+        (MAX_SCAN_PAGES - activePageCount()).coerceAtLeast(0)
 
     /** A cancelled add-pages request is intentionally a no-op for the active scan session. */
     fun cancelScannerRequest() {
@@ -114,7 +124,6 @@ class PageHarborSessionViewModel : ViewModel() {
         if (request == ScannerRequestMode.ADD_PAGES && existingSummary != null) {
             appendScan(
                 existingSummary = existingSummary,
-                addedSummary = scannerState,
                 addedPageUris = scannedPageUris,
             )
         } else {
@@ -134,9 +143,19 @@ class PageHarborSessionViewModel : ViewModel() {
         scannedPdfUri: Uri?,
         scannedPageUris: List<Uri>,
     ) {
-        this.scannedPdfUri = scannedPdfUri
-        scanPages = newPages(scannedPageUris)
-        this.scannerState = scannerState
+        val acceptedPageUris = scannedPageUris.take(MAX_SCAN_PAGES)
+        val scannerExceededPageLimit = scannerState.jpegPageCount > MAX_SCAN_PAGES ||
+            scannedPageUris.size > MAX_SCAN_PAGES
+        this.scannedPdfUri = if (scannerExceededPageLimit) null else scannedPdfUri
+        scanPages = newPages(acceptedPageUris)
+        this.scannerState = if (scannerExceededPageLimit) {
+            createScannerResultSummary(
+                jpegPageCount = acceptedPageUris.size,
+                pdfPageCount = null,
+            )
+        } else {
+            scannerState
+        }
         ocrUiState = OcrUiState.Idle
         ocrSelectedPageIndex = 0
         resetTransientState()
@@ -179,17 +198,17 @@ class PageHarborSessionViewModel : ViewModel() {
 
     private fun appendScan(
         existingSummary: ScannerSpikeState.ResultSummary,
-        addedSummary: ScannerSpikeState.ResultSummary,
         addedPageUris: List<Uri>,
     ) {
-        if (addedPageUris.isEmpty()) {
+        val acceptedPageUris = addedPageUris.take(remainingPageCapacity())
+        if (acceptedPageUris.isEmpty()) {
             screen = PageHarborScreen.ScanResult
             return
         }
 
-        scanPages = scanPages + newPages(addedPageUris)
+        scanPages = scanPages + newPages(acceptedPageUris)
         scannerState = createScannerResultSummary(
-            jpegPageCount = existingSummary.jpegPageCount + addedSummary.jpegPageCount,
+            jpegPageCount = existingSummary.jpegPageCount + acceptedPageUris.size,
             pdfPageCount = existingSummary.pdfPageCount,
         )
         ocrUiState = OcrUiState.Idle
@@ -219,4 +238,10 @@ class PageHarborSessionViewModel : ViewModel() {
     private fun newPages(uris: List<Uri?>): List<ActiveScanPage> = uris.map { uri ->
         ActiveScanPage(id = nextPageId++, sourceUri = uri)
     }
+
+    /** Use the larger representation defensively while an external scanner result is pending. */
+    private fun activePageCount(): Int = maxOf(
+        scanPages.size,
+        (scannerState as? ScannerSpikeState.ResultSummary)?.jpegPageCount ?: 0,
+    )
 }
