@@ -24,7 +24,7 @@ fun ocrStateAfterResult(result: OcrResult): OcrUiState = when {
     else -> OcrUiState.Success(result)
 }
 
-fun OcrResult.textFoundPageCount(): Int = pages.count { it.text.isNotBlank() }
+fun OcrResult.textFoundPageCount(): Int = pages.count { it.displayText().isNotBlank() }
 
 fun OcrResult.failedPageCount(): Int = pages.count { it.error != null }
 
@@ -38,10 +38,10 @@ fun formatOcrPreview(
     emptyPageText: String,
 ): String = (
     if (result.pages.size == 1) {
-        result.pages.single().text.ifBlank { emptyPageText }
+        result.pages.single().displayText().ifBlank { emptyPageText }
     } else {
         result.pages.joinToString(separator = "\n\n") { page ->
-            "${pageHeading(page.pageIndex + 1)}\n${page.text.ifBlank { emptyPageText }}"
+            "${pageHeading(page.pageIndex + 1)}\n${page.displayText().ifBlank { emptyPageText }}"
         }
     }
 ).trimEnd()
@@ -54,7 +54,7 @@ fun copyableOcrPreview(
     result: OcrResult,
     pageHeading: (Int) -> String,
     emptyPageText: String,
-): String? = if (result.pages.any { it.text.isNotBlank() }) {
+): String? = if (result.pages.any { it.displayText().isNotBlank() }) {
     formatOcrPreview(result, pageHeading, emptyPageText)
 } else {
     null

@@ -19,21 +19,35 @@ data class OcrTextBounds(
     }
 }
 
+/** A recognized word (or ML Kit element) with optional layout geometry. */
+data class OcrTextElement(
+    val text: String,
+    val bounds: OcrTextBounds? = null,
+)
+
 data class OcrTextLine(
     val text: String,
-    val bounds: OcrTextBounds,
+    val bounds: OcrTextBounds? = null,
     val confidence: Float? = null,
+    val elements: List<OcrTextElement> = emptyList(),
 ) {
     init {
         require(confidence == null || (confidence.isFinite() && confidence in 0f..1f))
     }
 }
 
+/** A recognized ML Kit block, retained to keep likely paragraph boundaries in the OCR result. */
+data class OcrTextBlock(
+    val lines: List<OcrTextLine>,
+    val bounds: OcrTextBounds? = null,
+)
+
 data class OcrPageLayout(
     val imageWidthPx: Int,
     val imageHeightPx: Int,
     val rotationDegrees: Int = 0,
     val lines: List<OcrTextLine>,
+    val blocks: List<OcrTextBlock> = emptyList(),
 ) {
     init {
         require(imageWidthPx > 0) { "imageWidthPx must be positive" }

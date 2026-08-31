@@ -169,7 +169,7 @@ class PdfBoxSearchablePdfGenerator(context: Context) : SearchablePdfGenerator {
         layout.lines.forEach { line ->
             if (line.text.isBlank()) return@forEach
             val mappedBounds = mapOcrBoundsToPdf(
-                bounds = line.bounds,
+                bounds = line.bounds ?: return@forEach,
                 sourceWidthPx = layout.imageWidthPx,
                 sourceHeightPx = layout.imageHeightPx,
                 pageSize = pageSize,

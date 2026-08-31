@@ -53,6 +53,24 @@ class MlKitOcrEngine : OcrEngine {
 
         return try {
             val result = Tasks.await(recognizer.process(InputImage.fromBitmap(bitmap, 0)))
+            val layoutBlocks = result.textBlocks.map { block ->
+                OcrTextBlock(
+                    lines = block.lines.map { line ->
+                        OcrTextLine(
+                            text = line.text,
+                            bounds = line.boundingBox.toOcrTextBounds(),
+                            confidence = null,
+                            elements = line.elements.map { element ->
+                                OcrTextElement(
+                                    text = element.text,
+                                    bounds = element.boundingBox.toOcrTextBounds(),
+                                )
+                            },
+                        )
+                    },
+                    bounds = block.boundingBox.toOcrTextBounds(),
+                )
+            }
             OcrPageResult(
                 pageIndex = pageIndex,
                 text = result.text,
@@ -63,21 +81,8 @@ class MlKitOcrEngine : OcrEngine {
                     // explicit prevents a future raw-camera input from silently changing the
                     // searchable-PDF coordinate contract.
                     rotationDegrees = 0,
-                    lines = result.textBlocks.flatMap { block ->
-                        block.lines.mapNotNull { line ->
-                            val bounds = line.boundingBox ?: return@mapNotNull null
-                            OcrTextLine(
-                                text = line.text,
-                                bounds = OcrTextBounds(
-                                    left = bounds.left.toFloat(),
-                                    top = bounds.top.toFloat(),
-                                    right = bounds.right.toFloat(),
-                                    bottom = bounds.bottom.toFloat(),
-                                ),
-                                confidence = null,
-                            )
-                        }
-                    },
+                    lines = layoutBlocks.flatMap { it.lines },
+                    blocks = layoutBlocks,
                 ),
             )
         } catch (_: Exception) {
@@ -85,6 +90,15 @@ class MlKitOcrEngine : OcrEngine {
         } finally {
             bitmap.recycle()
         }
+    }
+
+    private fun android.graphics.Rect?.toOcrTextBounds(): OcrTextBounds? = this?.let { bounds ->
+        OcrTextBounds(
+            left = bounds.left.toFloat(),
+            top = bounds.top.toFloat(),
+            right = bounds.right.toFloat(),
+            bottom = bounds.bottom.toFloat(),
+        )
     }
 
     /**

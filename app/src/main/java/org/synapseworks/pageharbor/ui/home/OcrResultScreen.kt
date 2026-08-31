@@ -45,6 +45,7 @@ import org.synapseworks.pageharbor.R
 import org.synapseworks.pageharbor.ocr.OcrPageResult
 import org.synapseworks.pageharbor.ocr.OcrResult
 import org.synapseworks.pageharbor.ocr.copyableOcrPreview
+import org.synapseworks.pageharbor.ocr.displayText
 import org.synapseworks.pageharbor.ocr.failedPageCount
 import org.synapseworks.pageharbor.ocr.textFoundPageCount
 
@@ -204,13 +205,14 @@ private fun OcrPageNavigation(
 
 @Composable
 private fun OcrPageText(page: OcrPageResult) {
+    val displayText = page.displayText()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             modifier = Modifier.semantics { heading() },
             text = stringResource(R.string.ocr_text_section_heading),
             style = MaterialTheme.typography.titleMedium,
         )
-        if (page.text.isBlank()) {
+        if (displayText.isBlank()) {
             Text(
                 text = stringResource(R.string.ocr_preview_empty_page),
                 style = MaterialTheme.typography.bodyLarge,
@@ -222,7 +224,7 @@ private fun OcrPageText(page: OcrPageResult) {
                         .fillMaxWidth()
                         .heightIn(max = 360.dp)
                         .verticalScroll(rememberScrollState()),
-                    text = page.text,
+                    text = displayText,
                     style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 28.sp),
                     color = MaterialTheme.colorScheme.onBackground,
                 )
