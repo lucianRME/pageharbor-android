@@ -111,17 +111,13 @@ class MainActivity : ComponentActivity() {
     private val scanLauncher = registerForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult(),
     ) { result ->
-        clearRecognizedText()
-        clearSearchablePdfSave()
-        session.clearScan()
-
         if (result.resultCode == Activity.RESULT_CANCELED) {
-            scannerSpikeState = ScannerSpikeState.Cancelled
+            session.cancelScannerRequest()
             return@registerForActivityResult
         }
 
         if (result.resultCode != Activity.RESULT_OK) {
-            scannerSpikeState = ScannerSpikeState.Error
+            session.failScannerRequest()
             return@registerForActivityResult
         }
 
@@ -130,9 +126,11 @@ class MainActivity : ComponentActivity() {
             val jpegPageCount = scannerResult?.pages?.size ?: 0
             val pdfPageCount = scannerResult?.pdf?.pageCount
             if (scannerResult == null || (jpegPageCount == 0 && pdfPageCount == null)) {
-                null
+                session.completeScannerRequestWithoutResult()
             } else {
-                session.replaceScan(
+                clearRecognizedText()
+                clearSearchablePdfSave()
+                session.completeScannerRequest(
                     scannerState = createScannerResultSummary(
                         jpegPageCount = jpegPageCount,
                         pdfPageCount = pdfPageCount,
@@ -141,8 +139,8 @@ class MainActivity : ComponentActivity() {
                     scannedPageUris = scannerResult.pages.orEmpty().map { page -> page.imageUri },
                 )
             }
-        }.getOrNull() ?: run {
-            scannerSpikeState = ScannerSpikeState.Error
+        }.onFailure {
+            session.failScannerRequest()
         }
     }
 
@@ -218,7 +216,13 @@ class MainActivity : ComponentActivity() {
         setContent {
             PageHarborApp(
                 screen = session.screen,
-                onScreenChange = { session.screen = it },
+                onScreenChange = { target ->
+                    if (target == PageHarborScreen.ScanResult) {
+                        session.returnToScanResult()
+                    } else {
+                        session.screen = target
+                    }
+                },
                 autoNavigateToScanResult = false,
                 scannerSpikeState = scannerSpikeState,
                 pdfSaveState = pdfSaveState,
@@ -247,11 +251,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun launchDocumentScanner() {
-        if (scannerSpikeState == ScannerSpikeState.Preparing) return
-
-        clearSearchablePdfSave()
-        clearRecognizedText()
-        scannerSpikeState = ScannerSpikeState.Preparing
+        if (session.beginScannerRequest() == null) return
 
         val options = GmsDocumentScannerOptions.Builder()
             .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_BASE_WITH_FILTER)
@@ -266,12 +266,11 @@ class MainActivity : ComponentActivity() {
         GmsDocumentScanning.getClient(options)
             .getStartScanIntent(this)
             .addOnSuccessListener { intentSender ->
-                scannerSpikeState = ScannerSpikeState.Idle
                 val request = IntentSenderRequest.Builder(intentSender).build()
                 scanLauncher.launch(request)
             }
             .addOnFailureListener {
-                scannerSpikeState = ScannerSpikeState.Error
+                session.failScannerRequest()
             }
     }
 

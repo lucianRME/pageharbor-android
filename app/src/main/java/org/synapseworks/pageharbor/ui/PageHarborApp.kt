@@ -1,5 +1,6 @@
 package org.synapseworks.pageharbor.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
@@ -90,6 +91,13 @@ fun PageHarborApp(
 
         LaunchedEffect(screen) {
             currentScreen = screen
+        }
+
+        BackHandler(
+            enabled = currentScreen == PageHarborScreen.OcrResult &&
+                ocrUiState is OcrUiState.Success,
+        ) {
+            navigateTo(PageHarborScreen.ScanResult)
         }
 
         when {
